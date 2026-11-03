@@ -1,25 +1,28 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { GameCanvas } from './game/GameCanvas';
 import { GameHUD } from './components/ui/GameHUD';
-import { TitleScreen } from './components/ui/TitleScreen';
-import { BUILDINGS, NPCS, INITIAL_QUESTS } from './data/portfolioData';
+import { IntroSequence } from './components/ui/IntroSequence';
+import { BUILDINGS, NPCS, INITIAL_QUESTS, ARYAN_STATS } from './data/portfolioData';
 import { BuildingData, TimeOfDay, Quest, NPC } from './types';
 import { soundManager } from './audio/SoundManager';
 
 // Interior Scenes
-import { GuildHallInterior } from './components/interiors/GuildHallInterior';
-import { BlacksmithInterior } from './components/interiors/BlacksmithInterior';
-import { ProjectBazaarInterior } from './components/interiors/ProjectBazaarInterior';
-import { LibraryInterior } from './components/interiors/LibraryInterior';
 import { CoffeeShopInterior } from './components/interiors/CoffeeShopInterior';
-import { RoyalArchiveInterior } from './components/interiors/RoyalArchiveInterior';
-import { ArenaInterior } from './components/interiors/ArenaInterior';
-import { ObservatoryInterior } from './components/interiors/ObservatoryInterior';
-import { AcademyInterior } from './components/interiors/AcademyInterior';
-import { AdventurersInnInterior } from './components/interiors/AdventurersInnInterior';
+import { PythonCaveInterior } from './components/interiors/PythonCaveInterior';
+import { HomeInterior } from './components/interiors/HomeInterior';
+import { GardenInterior } from './components/interiors/GardenInterior';
+import { SqlMinesInterior } from './components/interiors/SqlMinesInterior';
+import { BlacksmithInterior } from './components/interiors/BlacksmithInterior';
+import { LibraryInterior } from './components/interiors/LibraryInterior';
+import { AnalyticsTowerInterior } from './components/interiors/AnalyticsTowerInterior';
+import { MLLaboratoryInterior } from './components/interiors/MLLaboratoryInterior';
+import { BossArenaInterior } from './components/interiors/BossArenaInterior';
+import { PostOfficeInterior } from './components/interiors/PostOfficeInterior';
+import { GuildHallInterior } from './components/interiors/GuildHallInterior';
 
 // Modals
+import { AICompanionModal } from './components/modals/AICompanionModal';
 import { WorldMapModal } from './components/modals/WorldMapModal';
 import { QuestJournalModal } from './components/modals/QuestJournalModal';
 import { InventoryModal } from './components/modals/InventoryModal';
@@ -27,16 +30,17 @@ import { SettingsModal } from './components/modals/SettingsModal';
 
 export const App: React.FC = () => {
   const [gameStarted, setGameStarted] = useState<boolean>(false);
-  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('sunset');
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('day');
   const [activeBuilding, setActiveBuilding] = useState<string | null>(null);
   const [nearBuilding, setNearBuilding] = useState<BuildingData | null>(null);
   const [nearNPC, setNearNPC] = useState<NPC | null>(null);
-  const [activeModal, setActiveModal] = useState<'quests' | 'inventory' | 'map' | 'settings' | null>(null);
+  const [activeModal, setActiveModal] = useState<'quests' | 'inventory' | 'map' | 'settings' | 'companion' | null>(null);
 
-  // RPG Stats
-  const [playerLevel, setPlayerLevel] = useState<number>(12);
-  const [playerXp, setPlayerXp] = useState<number>(3240);
-  const maxXp = 4000;
+  // RPG Stats for Aryan (Level 18, 1280 XP, 24 Coffee Cups)
+  const [playerLevel, setPlayerLevel] = useState<number>(ARYAN_STATS.level);
+  const [playerXp, setPlayerXp] = useState<number>(ARYAN_STATS.xp);
+  const maxXp = ARYAN_STATS.maxXp;
+  const [coffeeCount, setCoffeeCount] = useState<number>(ARYAN_STATS.coffeeCups);
   const [quests, setQuests] = useState<Quest[]>(INITIAL_QUESTS);
   const [isSoundMuted, setIsSoundMuted] = useState<boolean>(false);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
@@ -59,9 +63,16 @@ export const App: React.FC = () => {
     });
   }, [maxXp]);
 
+  // Handle buying a coffee at Coffee Shop
+  const handleBuyCoffee = useCallback(() => {
+    setCoffeeCount((prev) => prev + 1);
+    handleXpGain(40);
+  }, [handleXpGain]);
+
   // Handle Entering a Building
   const handleEnterBuilding = useCallback((buildingId: string) => {
     setIsTransitioning(true);
+    soundManager.playEnterBuilding();
 
     // Complete corresponding quest if active
     setQuests((prevQuests) =>
@@ -91,9 +102,20 @@ export const App: React.FC = () => {
     }, 300);
   }, []);
 
+  // Fast Travel to Town Square Fountain
+  const handleFastTravelToTownSquare = useCallback(() => {
+    setActiveBuilding(null);
+    setActiveModal(null);
+    soundManager.playChime();
+    // Dispatch custom event to recenter player if needed
+    window.dispatchEvent(new CustomEvent('teleport-player', { detail: { x: 1200, y: 890 } }));
+  }, []);
+
   // Global Keyboard Navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
       if (e.code === 'Escape') {
         if (activeModal) {
           setActiveModal(null);
@@ -106,6 +128,8 @@ export const App: React.FC = () => {
         setActiveModal((prev) => (prev === 'quests' ? null : 'quests'));
       } else if (e.code === 'KeyI' && !activeBuilding) {
         setActiveModal((prev) => (prev === 'inventory' ? null : 'inventory'));
+      } else if (e.code === 'KeyC' && !activeBuilding) {
+        setActiveModal((prev) => (prev === 'companion' ? null : 'companion'));
       }
     };
 
@@ -119,19 +143,19 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#0c0e17] font-sans">
-      {/* 1. TITLE SCREEN (Initial Game Entrance) */}
+    <div className="relative w-screen h-screen overflow-hidden bg-[#090e17] font-sans">
+      {/* 1. CINEMATIC INTRO SEQUENCE (Section 3 of User Prompt) */}
       {!gameStarted && (
-        <TitleScreen
-          onStartAdventure={() => setGameStarted(true)}
-          onOpenMap={() => {
+        <IntroSequence
+          onBegin={() => setGameStarted(true)}
+          onFastTravel={() => {
             setGameStarted(true);
             setActiveModal('map');
           }}
         />
       )}
 
-      {/* 2. MAIN LIVING TOWN OVERWORLD */}
+      {/* 2. MAIN EXPLORABLE TOWN OVERWORLD */}
       <div className={`w-full h-full relative ${activeBuilding ? 'invisible pointer-events-none' : 'visible'}`}>
         <GameCanvas
           buildings={BUILDINGS}
@@ -146,7 +170,7 @@ export const App: React.FC = () => {
           activeBuildingModal={activeBuilding}
         />
 
-        {/* Persistent RPG HUD */}
+        {/* Persistent RPG HUD matching Reference Screenshot */}
         {gameStarted && (
           <GameHUD
             playerLevel={playerLevel}
@@ -162,49 +186,112 @@ export const App: React.FC = () => {
             onOpenInventory={() => setActiveModal('inventory')}
             onOpenMap={() => setActiveModal('map')}
             onOpenSettings={() => setActiveModal('settings')}
+            onOpenCompanion={() => setActiveModal('companion')}
             isSoundMuted={isSoundMuted}
             onToggleSound={handleToggleSound}
+            onFastTravelToTownSquare={handleFastTravelToTownSquare}
           />
         )}
       </div>
 
-      {/* 3. DEDICATED BUILDING INTERIORS */}
+      {/* 3. DEDICATED BUILDING INTERIORS (Seamless Transitions) */}
       {activeBuilding && (
         <div className="absolute inset-0 z-30 animate-in fade-in zoom-in-95 duration-300">
-          {activeBuilding === 'guild_hall' && (
-            <GuildHallInterior onBack={handleBackToTown} />
-          )}
-          {activeBuilding === 'blacksmith' && (
-            <BlacksmithInterior onBack={handleBackToTown} />
-          )}
-          {activeBuilding === 'project_bazaar' && (
-            <ProjectBazaarInterior onBack={handleBackToTown} />
-          )}
-          {activeBuilding === 'library' && (
-            <LibraryInterior onBack={handleBackToTown} />
-          )}
           {activeBuilding === 'coffee_shop' && (
-            <CoffeeShopInterior onBack={handleBackToTown} />
+            <CoffeeShopInterior
+              onBack={handleBackToTown}
+              onBuyCoffee={handleBuyCoffee}
+              coffeeCount={coffeeCount}
+            />
           )}
-          {activeBuilding === 'royal_archive' && (
-            <RoyalArchiveInterior onBack={handleBackToTown} />
+
+          {activeBuilding === 'python_cave' && (
+            <PythonCaveInterior
+              onBack={handleBackToTown}
+              onGainXp={handleXpGain}
+            />
           )}
-          {activeBuilding === 'arena' && (
-            <ArenaInterior onBack={handleBackToTown} />
+
+          {activeBuilding === 'home' && (
+            <HomeInterior
+              onBack={handleBackToTown}
+              onOpenQuests={() => setActiveModal('quests')}
+              playerLevel={playerLevel}
+              playerXp={playerXp}
+              coffeeCount={coffeeCount}
+            />
           )}
-          {activeBuilding === 'observatory' && (
-            <ObservatoryInterior onBack={handleBackToTown} />
+
+          {activeBuilding === 'garden' && (
+            <GardenInterior
+              onBack={handleBackToTown}
+              onGainXp={handleXpGain}
+            />
           )}
-          {activeBuilding === 'academy' && (
-            <AcademyInterior onBack={handleBackToTown} />
+
+          {activeBuilding === 'sql_mines' && (
+            <SqlMinesInterior
+              onBack={handleBackToTown}
+              onGainXp={handleXpGain}
+            />
           )}
-          {activeBuilding === 'adventurers_inn' && (
-            <AdventurersInnInterior onBack={handleBackToTown} />
+
+          {activeBuilding === 'blacksmith' && (
+            <BlacksmithInterior
+              onBack={handleBackToTown}
+              onGainXp={handleXpGain}
+            />
+          )}
+
+          {activeBuilding === 'library' && (
+            <LibraryInterior
+              onBack={handleBackToTown}
+              onGainXp={handleXpGain}
+            />
+          )}
+
+          {activeBuilding === 'analytics_tower' && (
+            <AnalyticsTowerInterior onBack={handleBackToTown} />
+          )}
+
+          {activeBuilding === 'ml_lab' && (
+            <MLLaboratoryInterior
+              onBack={handleBackToTown}
+              onGainXp={handleXpGain}
+            />
+          )}
+
+          {activeBuilding === 'boss_arena' && (
+            <BossArenaInterior
+              onBack={handleBackToTown}
+              onGainXp={handleXpGain}
+            />
+          )}
+
+          {activeBuilding === 'post_office' && (
+            <PostOfficeInterior
+              onBack={handleBackToTown}
+              onGainXp={handleXpGain}
+            />
+          )}
+
+          {activeBuilding === 'guild_hall' && (
+            <GuildHallInterior
+              onBack={handleBackToTown}
+              onOpenQuests={() => setActiveModal('quests')}
+            />
           )}
         </div>
       )}
 
       {/* 4. RPG SYSTEM MODALS */}
+      {activeModal === 'companion' && (
+        <AICompanionModal
+          onClose={() => setActiveModal(null)}
+          onNavigateBuilding={handleEnterBuilding}
+        />
+      )}
+
       {activeModal === 'map' && (
         <WorldMapModal
           onClose={() => setActiveModal(null)}
@@ -242,11 +329,11 @@ export const App: React.FC = () => {
 
       {/* 5. CINEMATIC SCENE TRANSITION SHUTTER */}
       {isTransitioning && (
-        <div className="fixed inset-0 z-50 bg-[#090b14] pointer-events-none transition-opacity duration-300 animate-in fade-in" />
+        <div className="fixed inset-0 z-50 bg-[#070b12] pointer-events-none transition-opacity duration-300 animate-in fade-in" />
       )}
 
-      {/* Subtle RPG Vignette & Scanline Overlay */}
-      <div className="pixel-scanlines fixed inset-0 pointer-events-none z-10 opacity-40" />
+      {/* Subtle Scanline Overlay */}
+      <div className="pixel-scanlines fixed inset-0 pointer-events-none z-10 opacity-30" />
     </div>
   );
 };

@@ -10,13 +10,13 @@ interface Bird {
 }
 
 export class WorldRenderer {
-  public worldWidth = 2400;
-  public worldHeight = 1800;
+  public worldWidth = 2800;
+  public worldHeight = 2200;
   private animTimer = 0;
   private birds: Bird[] = [
-    { x: 100, y: 160, speed: 1.6 },
-    { x: 60, y: 175, speed: 1.6 },
-    { x: 380, y: 210, speed: 2.0 }
+    { x: 120, y: 180, speed: 1.8 },
+    { x: 80, y: 195, speed: 1.8 },
+    { x: 450, y: 220, speed: 2.2 }
   ];
 
   public render(
@@ -30,412 +30,201 @@ export class WorldRenderer {
   ) {
     this.animTimer += 0.035;
 
-    // 1. LAYER 1: Vibrant Hyper Light Drifter Twilight Sky & Cosmic Clouds
-    this.drawSkyAndMountains(ctx, cameraX, cameraY, timeOfDay);
+    // 1. Natural Green Grass Meadow Terrain
+    this.drawTerrain(ctx, cameraX, cameraY, timeOfDay);
 
-    // 2. LAYER 2: Birds in Sky
+    // 2. Connected Cobblestone Roads & Central Plaza
+    this.drawRoadsAndPlaza(ctx, cameraX, cameraY);
+
+    // 3. Eastern River with Bridge
+    this.drawRiver(ctx, cameraX, cameraY);
+
+    // 4. Perimeter Tree Groves
+    this.drawPerimeterTrees(ctx, cameraX, cameraY);
+
+    // 5. Birds in the Sky
     this.drawBirds(ctx, cameraX, cameraY);
 
-    // 3. LAYER 3: Enchanted Ground & Bioluminescent River
-    this.drawTerrain(ctx, cameraX, cameraY, timeOfDay);
-    this.drawRiverAndWaterfall(ctx, cameraX, cameraY, timeOfDay);
-
-    // 4. LAYER 4: Lavender Flagstones, District Paving & Bridges
-    this.drawPathsAndDistricts(ctx, cameraX, cameraY);
-
-    // 5. LAYER 5: Y-SORTED DEPTH RENDERING (Buildings, Trees, Campfire, NPCs, Player!)
+    // 6. Y-Sorted Entities (Buildings, Fountain, NPCs, Player, Foliage)
     this.drawYSortedEntities(ctx, cameraX, cameraY, timeOfDay, buildings, npcManager, player);
   }
 
-  // 1. Vibrant Twilight Sky & Cosmic Magenta Clouds with Ancient Titan Monoliths
-  private drawSkyAndMountains(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number, timeOfDay: TimeOfDay) {
-    const w = ctx.canvas.width;
-    const h = ctx.canvas.height;
+  // 1. Natural Green Grass Meadow Terrain
+  private drawTerrain(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number, timeOfDay: TimeOfDay) {
+    const grassPattern = pixelAssets.getGrassPattern(ctx);
+    ctx.fillStyle = grassPattern;
+    ctx.fillRect(-cameraX, -cameraY, this.worldWidth, this.worldHeight);
 
-    // Hyper Light Drifter Sky Gradients: Luminous twilight magenta & cosmic violet
-    let skyColors: [string, string, string];
-    if (timeOfDay === 'night') {
-      skyColors = ['#0f071d', '#220b3b', '#451052'];
-    } else if (timeOfDay === 'sunset') {
-      // Iconic Hyper Light Drifter Twilight: Cosmic Indigo to Radiant Fuchsia-Magenta
-      skyColors = ['#140728', '#400c54', '#86198f'];
-    } else if (timeOfDay === 'morning') {
-      skyColors = ['#160a2c', '#38145e', '#a21caf'];
-    } else {
-      skyColors = ['#18103c', '#43238a', '#c026d3'];
+    // Soft organic grass clump accents
+    ctx.fillStyle = '#2d6d42';
+    for (let gx = 100; gx < this.worldWidth - 100; gx += 160) {
+      for (let gy = 360; gy < this.worldHeight - 100; gy += 130) {
+        const px = gx - cameraX;
+        const py = gy - cameraY;
+        ctx.fillRect(px, py, 18, 6);
+        ctx.fillRect(px + 4, py - 3, 10, 3);
+      }
     }
+  }
 
-    const grad = ctx.createLinearGradient(0, 0, 0, h * 0.7);
-    grad.addColorStop(0, skyColors[0]);
-    grad.addColorStop(0.5, skyColors[1]);
-    grad.addColorStop(1, skyColors[2]);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
+  // 2. Connected Cobblestone / Dirt Road Network & Central Circular Plaza
+  private drawRoadsAndPlaza(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number) {
+    ctx.save();
+    const cobblePattern = pixelAssets.getCobblePattern(ctx);
+    ctx.fillStyle = cobblePattern;
 
-    // Distant Titan Ruin Citadels & Ancient Monoliths Silhouetted against the Horizon
-    const titanParallax = cameraX * 0.04;
-    ctx.fillStyle = '#180a29';
-    // Titan Monolith 1 (Left)
-    this.drawTitanSilhouette(ctx, 160 - titanParallax, h * 0.32, 70, 160);
-    // Titan Citadel (Center-Left)
-    this.drawTitanSilhouette(ctx, 480 - titanParallax, h * 0.26, 110, 200);
-    // Ancient Spire (Center-Right)
-    this.drawTitanSilhouette(ctx, 880 - titanParallax, h * 0.30, 85, 180);
-    // Floating Anti-Gravity Ruin Blocks
-    const floatBob1 = Math.sin(this.animTimer * 1.5) * 6;
-    const floatBob2 = Math.cos(this.animTimer * 1.2) * 5;
-    this.drawFloatingBlock(ctx, 310 - titanParallax, h * 0.16 + floatBob1, 36, 24);
-    this.drawFloatingBlock(ctx, 720 - titanParallax, h * 0.12 + floatBob2, 48, 28);
-    this.drawFloatingBlock(ctx, 1050 - titanParallax, h * 0.18 - floatBob1, 30, 20);
+    const centerX = 1200 - cameraX;
+    const centerY = 960 - cameraY;
 
-    // Volumetric Billowing Pillowy Clouds (Multi-layered Fuchsia, Magenta & Rose)
-    const cloudParallax = cameraX * 0.07;
-    // Back Cloud Layer (Deep Fuchsia)
-    ctx.fillStyle = 'rgba(162, 28, 175, 0.55)';
-    this.drawPixelCloud(ctx, 100 - cloudParallax, h * 0.16, 200, 55);
-    this.drawPixelCloud(ctx, 520 - cloudParallax, h * 0.10, 240, 65);
-    this.drawPixelCloud(ctx, 960 - cloudParallax, h * 0.18, 220, 58);
-
-    // Mid Cloud Layer (Radiant Magenta)
-    ctx.fillStyle = 'rgba(217, 70, 239, 0.7)';
-    this.drawPixelCloud(ctx, 280 - cloudParallax, h * 0.22, 180, 50);
-    this.drawPixelCloud(ctx, 740 - cloudParallax, h * 0.17, 210, 58);
-    this.drawPixelCloud(ctx, 1180 - cloudParallax, h * 0.24, 190, 52);
-
-    // Front Cloud Accents (Soft Orchid / Rose Peach)
-    ctx.fillStyle = 'rgba(244, 114, 182, 0.45)';
-    this.drawPixelCloud(ctx, 420 - cloudParallax, h * 0.28, 140, 36);
-    this.drawPixelCloud(ctx, 860 - cloudParallax, h * 0.25, 160, 40);
-
-    // Twinkling Stardust Motes
-    if (timeOfDay === 'night' || timeOfDay === 'sunset') {
-      const stars = [
-        [0.08, 0.08], [0.2, 0.05], [0.35, 0.12], [0.52, 0.06],
-        [0.68, 0.14], [0.84, 0.07], [0.15, 0.22], [0.44, 0.25],
-        [0.76, 0.18], [0.92, 0.22]
-      ];
-      ctx.fillStyle = '#fef08a';
-      stars.forEach(([sx, sy], i) => {
-        if ((Math.floor(this.animTimer * 2 + i) % 3) !== 0) {
-          ctx.fillRect(Math.floor(sx * w), Math.floor(sy * (h * 0.4)), 2, 2);
-        }
-      });
-
-      // Luminous Full Moon
-      const mx = Math.floor(w * 0.82);
-      const my = Math.floor(h * 0.14);
-      ctx.fillStyle = '#fdf4ff';
-      ctx.fillRect(mx - 8, my - 16, 16, 32);
-      ctx.fillRect(mx - 14, my - 12, 28, 24);
-      ctx.fillRect(mx - 16, my - 8, 32, 16);
-      // Soft magenta moonlit aura
-      ctx.fillStyle = 'rgba(244, 114, 182, 0.2)';
-      ctx.fillRect(mx - 22, my - 16, 44, 32);
-    }
-
-    // Parallax Mountain Ridge (Stepped Obsidian Silhouettes)
-    const parallax = cameraX * 0.12;
-    ctx.fillStyle = '#1e0c33';
+    // A. Central Circular Plaza around Fountain (Radius ~160px)
     ctx.beginPath();
-    ctx.moveTo(0, h * 0.48);
-    const pts = [
-      [w * 0.1 - parallax, h * 0.28],
-      [w * 0.3 - parallax, h * 0.38],
-      [w * 0.5 - parallax, h * 0.22],
-      [w * 0.7 - parallax, h * 0.34],
-      [w * 0.9 - parallax, h * 0.26],
-      [w + 100, h * 0.48]
-    ];
-    pts.forEach(([px, py]) => ctx.lineTo(px, py));
-    ctx.lineTo(w, h);
-    ctx.lineTo(0, h);
+    ctx.arc(centerX, centerY, 150, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cobblestone border rim
+    ctx.strokeStyle = '#5c3a21';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // B. Connected Radial Roads to all locations (Matching Reference Screenshot):
+    const roadWidth = 64;
+
+    // Road North to Guild Hall (1200, 480)
+    ctx.fillRect(centerX - roadWidth / 2, centerY - 480, roadWidth, 480);
+
+    // Road North-West to Coffee Shop (620, 520)
+    this.drawDiagonalPath(ctx, centerX - 100, centerY - 100, 745 - cameraX, 710 - cameraY, 56);
+
+    // Road North-East to Python Cave (1720, 520)
+    this.drawDiagonalPath(ctx, centerX + 100, centerY - 100, 1850 - cameraX, 720 - cameraY, 56);
+
+    // Road West to Garden (620, 920)
+    ctx.fillRect(740 - cameraX, centerY - roadWidth / 2, centerX - (740 - cameraX), roadWidth);
+
+    // Road East to SQL Mines (1720, 920) and Blacksmith (2180, 900)
+    ctx.fillRect(centerX, centerY - roadWidth / 2, 2300 - cameraX - centerX, roadWidth);
+
+    // Road South-West to Library (620, 1320)
+    this.drawDiagonalPath(ctx, centerX - 100, centerY + 100, 755 - cameraX, 1540 - cameraY, 56);
+
+    // Road South to Your Home (1160, 1320) & Post Office (1160, 1680)
+    ctx.fillRect(centerX - roadWidth / 2, centerY, roadWidth, 900);
+
+    // Road South-East to Analytics Tower (1720, 1320)
+    this.drawDiagonalPath(ctx, centerX + 100, centerY + 100, 1840 - cameraX, 1560 - cameraY, 56);
+
+    // Road from Blacksmith North to ML Lab (2180, 520)
+    ctx.fillRect(2300 - cameraX - roadWidth / 2, 720 - cameraY, roadWidth, 400);
+
+    // Road from Analytics Tower East to Boss Arena (2180, 1320)
+    ctx.fillRect(1840 - cameraX, 1530 - cameraY - roadWidth / 2, 460, roadWidth);
+
+    ctx.restore();
+  }
+
+  // Draw smooth angled path connecting road hubs
+  private drawDiagonalPath(
+    ctx: CanvasRenderingContext2D,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    width: number
+  ) {
+    ctx.save();
+    ctx.lineWidth = width;
+    ctx.strokeStyle = pixelAssets.getCobblePattern(ctx);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 3. Eastern Winding River with Stone Bank Borders & Bridge
+  private drawRiver(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number) {
+    ctx.save();
+    const riverStartX = 2520 - cameraX;
+
+    // River Water (Sparkling Blue)
+    ctx.fillStyle = '#2563eb';
+    ctx.beginPath();
+    ctx.moveTo(riverStartX, 0);
+    ctx.bezierCurveTo(riverStartX - 50, 600, riverStartX + 60, 1200, riverStartX - 30, 2200);
+    ctx.lineTo(this.worldWidth - cameraX, 2200);
+    ctx.lineTo(this.worldWidth - cameraX, 0);
     ctx.closePath();
     ctx.fill();
+
+    // River Stone Bank Border
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(riverStartX, 0);
+    ctx.bezierCurveTo(riverStartX - 50, 600, riverStartX + 60, 1200, riverStartX - 30, 2200);
+    ctx.stroke();
+
+    // Water Shimmer Ripples
+    ctx.fillStyle = '#93c5fd';
+    const flow = Math.floor(this.animTimer * 5);
+    for (let i = 0; i < 20; i++) {
+      const rx = riverStartX + 40 + ((i * 37) % 140);
+      const ry = ((flow * 14 + i * 110) % 2100);
+      ctx.fillRect(rx, ry, 28, 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(rx + 6, ry, 12, 1);
+      ctx.fillStyle = '#93c5fd';
+    }
+
+    // Wooden Bridge Crossing River at Y: 900-960
+    const bridgeX = 2460 - cameraX;
+    const bridgeY = 900 - cameraY;
+    const bridgeW = 150;
+    const bridgeH = 64;
+
+    ctx.fillStyle = '#451a03'; // dark timber
+    ctx.fillRect(bridgeX, bridgeY, bridgeW, bridgeH);
+    ctx.fillStyle = '#78350f';
+    for (let by = 0; by < bridgeH; by += 8) {
+      ctx.fillRect(bridgeX, bridgeY + by, bridgeW, 6);
+    }
+    // Bridge rails
+    ctx.fillStyle = '#291003';
+    ctx.fillRect(bridgeX, bridgeY - 3, bridgeW, 4);
+    ctx.fillRect(bridgeX, bridgeY + bridgeH - 1, bridgeW, 4);
+
+    ctx.restore();
   }
 
-  // Draw ancient titan monolith silhouette against sky
-  private drawTitanSilhouette(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
-    ctx.fillRect(x, y, w, h);
-    ctx.fillRect(x + 10, y - 20, w - 20, 20);
-    ctx.fillRect(x + 18, y - 36, w - 36, 16);
-    // Glowing cyan ocular slit / rune
-    ctx.fillStyle = '#22d3ee';
-    ctx.fillRect(x + Math.floor(w / 2) - 4, y + 25, 8, 3);
-    ctx.fillStyle = '#180a29';
+  // 4. Perimeter Rounded Oak & Pine Trees (Enclosing the Town)
+  private drawPerimeterTrees(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number) {
+    ctx.save();
+    // Left border trees
+    for (let ty = 340; ty < this.worldHeight; ty += 120) {
+      this.drawOakTree(ctx, 400 - cameraX, ty - cameraY, 46);
+      this.drawPineTree(ctx, 320 - cameraX, ty + 50 - cameraY, 38);
+    }
+    // Top border trees
+    for (let tx = 400; tx < this.worldWidth - 300; tx += 140) {
+      this.drawOakTree(ctx, tx - cameraX, 340 - cameraY, 44);
+    }
+    ctx.restore();
   }
 
-  // Draw floating anti-gravity monolith in sky
-  private drawFloatingBlock(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
-    ctx.fillStyle = '#220b3b';
-    ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = '#3b145e';
-    ctx.fillRect(x + 3, y + 3, w - 6, h - 6);
-    // Glowing cyan energy line
-    ctx.fillStyle = '#22d3ee';
-    ctx.fillRect(x + 6, y + Math.floor(h / 2), w - 12, 2);
-  }
-
-  // Cloud drawing helper (Hyper Light Drifter pillowy silhouette)
-  private drawPixelCloud(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
-    ctx.fillRect(x, y, w, h);
-    ctx.fillRect(x + 12, y - 12, w - 24, 12);
-    ctx.fillRect(x + 28, y - 22, w - 56, 10);
-    ctx.fillRect(x + 18, y + h, w - 36, 10);
-  }
-
-  // 2. Flying Birds
+  // 5. Flying Birds
   private drawBirds(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number) {
     this.birds.forEach((b, idx) => {
       b.x += b.speed;
       if (b.x > this.worldWidth + 100) b.x = -50;
-      const screenX = b.x - cameraX * 0.3;
-      const screenY = b.y - cameraY * 0.3;
+      const screenX = b.x - cameraX * 0.2;
+      const screenY = b.y - cameraY * 0.2;
       const frame = Math.floor(this.animTimer * 4 + idx) % 2;
       pixelAssets.drawBird(ctx, screenX, screenY, frame);
     });
   }
 
-  // 3. Ground Terrain (Radiant Hyper Light Drifter Pale Lavender Stone Plateau & Stepped Cliffs)
-  private drawTerrain(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number, timeOfDay: TimeOfDay) {
-    // Base explorable stone plateau: Pale lavender / rose-mauve stone (From reference image!)
-    const plateauBase = '#cfa4c4';
-    const plateauHighlight = '#dfb8d4';
-    const cliffShadow = '#281438';
-    const cliffDeep = '#190a24';
-
-    // 1. Fill ground plateau with pale lavender stone
-    ctx.fillStyle = plateauBase;
-    ctx.fillRect(-cameraX, -cameraY, this.worldWidth, this.worldHeight);
-
-    // 2. Geometric lavender stone pavers & cliff contours
-    ctx.fillStyle = plateauHighlight;
-    for (let gx = 0; gx < this.worldWidth; gx += 64) {
-      for (let gy = 180; gy < this.worldHeight; gy += 48) {
-        const px = gx - cameraX;
-        const py = gy - cameraY;
-        ctx.fillRect(px, py, 48, 36);
-        ctx.fillRect(px + 4, py + 4, 40, 2);
-      }
-    }
-
-    // 3. Stepped Geometric Cliff Edges with deep plum drop shadows
-    ctx.fillStyle = cliffShadow;
-    // Upper Northern Cliff Shelf
-    ctx.fillRect(-cameraX, 340 - cameraY, this.worldWidth, 18);
-    ctx.fillStyle = cliffDeep;
-    ctx.fillRect(-cameraX, 358 - cameraY, this.worldWidth, 22);
-
-    // Western River Cliff Shelf
-    ctx.fillStyle = cliffShadow;
-    ctx.fillRect(320 - cameraX, 380 - cameraY, 30, 1420);
-    ctx.fillStyle = cliffDeep;
-    ctx.fillRect(350 - cameraX, 380 - cameraY, 15, 1420);
-
-    // 4. Inlaid Ancient Techno-Arcane Circuit Lines (Glowing Electric Cyan)
-    ctx.fillStyle = '#22d3ee';
-    // Grand circuit track from Plaza to Guild Hall
-    ctx.fillRect(1358 - cameraX, 600 - cameraY, 4, 520);
-    ctx.fillRect(1348 - cameraX, 680 - cameraY, 24, 4);
-    ctx.fillRect(1348 - cameraX, 860 - cameraY, 24, 4);
-
-    // Circuit track to Blacksmith
-    ctx.fillRect(1360 - cameraX, 1118 - cameraY, 450, 4);
-    ctx.fillRect(1620 - cameraX, 1108 - cameraY, 4, 24);
-
-    // Circuit track to Bazaar
-    ctx.fillRect(1360 - cameraX, 1220 - cameraY, 380, 4);
-
-    // Glowing Cyan Circuit Nodes
-    ctx.fillStyle = '#67e8f9';
-    ctx.fillRect(1356 - cameraX, 678 - cameraY, 8, 8);
-    ctx.fillRect(1356 - cameraX, 858 - cameraY, 8, 8);
-    ctx.fillRect(1618 - cameraX, 1116 - cameraY, 8, 8);
-
-    // 5. Bioluminescent Mint-Cyan Moss & Blooming Magenta Wild Flowers
-    for (let gx = 40; gx < this.worldWidth; gx += 85) {
-      for (let gy = 240; gy < this.worldHeight; gy += 75) {
-        const px = gx - cameraX;
-        const py = gy - cameraY;
-        if ((gx + gy) % 2 === 0) {
-          // Mint-cyan moss patch
-          ctx.fillStyle = '#10b981';
-          ctx.fillRect(px, py, 18, 8);
-          ctx.fillStyle = '#2dd4bf';
-          ctx.fillRect(px + 3, py - 2, 12, 3);
-          ctx.fillRect(px + 6, py + 1, 4, 4);
-        } else if ((gx + gy) % 3 === 0) {
-          // Vivid magenta/orchid wild flowers
-          ctx.fillStyle = '#f43f5e';
-          ctx.fillRect(px + 8, py - 3, 3, 3);
-          ctx.fillRect(px + 14, py - 2, 2, 2);
-          ctx.fillStyle = '#e879f9';
-          ctx.fillRect(px + 6, py - 1, 2, 2);
-        }
-      }
-    }
-  }
-
-  // Bioluminescent Emerald-Cyan Water & Luminous Waterfall (From Reference Image!)
-  private drawRiverAndWaterfall(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number, timeOfDay: TimeOfDay) {
-    // Radiant crystalline turquoise/mint-emerald water palette
-    const waterBase = '#0d7a6b';
-    const waterMid = '#14b8a6';
-    const waterHighlight = '#2dd4bf';
-    const waterShimmer = '#a5f3fc';
-    const waterPure = '#ffffff';
-
-    ctx.save();
-    // 1. Broad River & Lagoon Bed
-    ctx.fillStyle = waterBase;
-    ctx.beginPath();
-    ctx.moveTo(960 - cameraX, 360 - cameraY);
-    ctx.bezierCurveTo(900 - cameraX, 600 - cameraY, 780 - cameraX, 900 - cameraY, 700 - cameraX, 1100 - cameraY);
-    ctx.bezierCurveTo(620 - cameraX, 1300 - cameraY, 520 - cameraX, 1500 - cameraY, 480 - cameraX, 1800 - cameraY);
-    ctx.lineTo(260 - cameraX, 1800 - cameraY);
-    ctx.bezierCurveTo(320 - cameraX, 1500 - cameraY, 440 - cameraX, 1300 - cameraY, 520 - cameraX, 1100 - cameraY);
-    ctx.bezierCurveTo(620 - cameraX, 900 - cameraY, 740 - cameraX, 600 - cameraY, 800 - cameraX, 360 - cameraY);
-    ctx.closePath();
-    ctx.fill();
-
-    // 2. Inner Glowing Mint-Emerald Water Stream
-    ctx.fillStyle = waterMid;
-    ctx.beginPath();
-    ctx.moveTo(940 - cameraX, 380 - cameraY);
-    ctx.bezierCurveTo(880 - cameraX, 600 - cameraY, 760 - cameraX, 900 - cameraY, 680 - cameraX, 1100 - cameraY);
-    ctx.bezierCurveTo(600 - cameraX, 1300 - cameraY, 500 - cameraX, 1500 - cameraY, 460 - cameraX, 1800 - cameraY);
-    ctx.lineTo(340 - cameraX, 1800 - cameraY);
-    ctx.bezierCurveTo(380 - cameraX, 1500 - cameraY, 480 - cameraX, 1300 - cameraY, 560 - cameraX, 1100 - cameraY);
-    ctx.bezierCurveTo(650 - cameraX, 900 - cameraY, 760 - cameraX, 600 - cameraY, 820 - cameraX, 380 - cameraY);
-    ctx.closePath();
-    ctx.fill();
-
-    // 3. River Bank Obsidian-Plum Stone Border with Cyan Lichen
-    ctx.strokeStyle = '#22112e';
-    ctx.lineWidth = 6;
-    ctx.stroke();
-
-    // 4. DISTINCTIVE HYPER LIGHT DRIFTER HORIZONTAL SHIMMER LINES
-    // Crisp horizontal white & cyan ripple bars drifting across the water surface
-    const flowFrame = Math.floor(this.animTimer * 6);
-    for (let i = 0; i < 36; i++) {
-      const offset = ((flowFrame * 12 + i * 50) % 1450);
-      const rx = 820 - (offset * 0.26) - cameraX;
-      const ry = 390 + offset - cameraY;
-      const rippleWidth = 24 + ((i * 7) % 32);
-
-      // Cyan ripple body
-      ctx.fillStyle = waterHighlight;
-      ctx.fillRect(Math.floor(rx), Math.floor(ry), rippleWidth, 2);
-      // Bright white/cyan shimmer highlight
-      ctx.fillStyle = (i % 2 === 0) ? waterPure : waterShimmer;
-      ctx.fillRect(Math.floor(rx + 4), Math.floor(ry), Math.floor(rippleWidth * 0.5), 1);
-    }
-
-    // 5. Sunken Ancient Stepping Stones in River
-    const stones = [
-      { x: 740, y: 720, r: 16 },
-      { x: 710, y: 760, r: 20 },
-      { x: 670, y: 980, r: 18 },
-      { x: 630, y: 1220, r: 22 },
-      { x: 580, y: 1380, r: 19 },
-      { x: 520, y: 1540, r: 24 }
-    ];
-    stones.forEach(st => {
-      pixelAssets.drawSteppingStone(ctx, st.x - cameraX, st.y - cameraY, st.r);
-    });
-
-    // 6. Upper Cliffside Waterfall (Luminous Cyan Cascade)
-    const wfX = 960 - cameraX;
-    const wfY = 380 - cameraY;
-    ctx.fillStyle = '#14b8a6';
-    ctx.fillRect(wfX - 34, wfY - 60, 68, 85);
-
-    // Animated White/Cyan Foam Streaks
-    ctx.fillStyle = '#ecfeff';
-    const foamOffset = (Math.floor(this.animTimer * 14) % 6) * 4;
-    for (let col = -28; col <= 28; col += 8) {
-      ctx.fillRect(wfX + col, wfY - 50 + foamOffset, 4, 20);
-    }
-    const poolBob = Math.floor(Math.sin(this.animTimer * 6) * 3);
-    ctx.fillRect(wfX - 40, wfY + 22 + poolBob, 80, 8);
-    ctx.fillStyle = '#2dd4bf';
-    ctx.fillRect(wfX - 30, wfY + 30 + poolBob, 60, 6);
-
-    ctx.restore();
-  }
-
-  // 4. Lavender Flagstones, District Paving & Bridges
-  private drawPathsAndDistricts(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number) {
-    ctx.save();
-
-    // Central Plaza: Centered at (1360, 1120)
-    const plazaX = Math.floor(1360 - cameraX);
-    const plazaY = Math.floor(1120 - cameraY);
-
-    // Lavender/Mauve Flagstone Plaza Area (District A)
-    const flagstonePat = pixelAssets.getFlagstonePattern(ctx);
-    ctx.fillStyle = flagstonePat;
-    ctx.fillRect(plazaX - 190, plazaY - 170, 380, 340);
-
-    // Neon-cyan rune inlay border
-    ctx.strokeStyle = '#2dd4bf';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(plazaX - 190, plazaY - 170, 380, 340);
-
-    // Cobblestone Thoroughfares connecting Districts
-    const cobblePat = pixelAssets.getCobblePattern(ctx);
-    ctx.fillStyle = cobblePat;
-
-    // Avenue North to Guild District
-    ctx.fillRect(plazaX - 36, plazaY - 260, 72, 100);
-    ctx.fillRect(plazaX - 36, plazaY - 500, 72, 250);
-
-    // Avenue East to Crafting District
-    ctx.fillRect(plazaX + 180, plazaY - 30, 260, 60);
-
-    // Avenue South-East to Market District
-    ctx.fillRect(plazaX + 160, plazaY + 100, 260, 60);
-
-    // Avenue West to Market District & River Crossing
-    ctx.fillRect(plazaX - 360, plazaY + 10, 180, 60);
-
-    // Avenue North-West to Knowledge District
-    ctx.fillRect(plazaX - 340, plazaY - 160, 180, 55);
-
-    // Stone Bridges Crossing River:
-    this.drawPixelBridge(ctx, 640 - cameraX, 1140 - cameraY, 130, 44);
-    this.drawPixelBridge(ctx, 810 - cameraX, 830 - cameraY, 130, 44);
-
-    ctx.restore();
-  }
-
-  private drawPixelBridge(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
-    const bx = Math.floor(x - w / 2);
-    const by = Math.floor(y - h / 2);
-
-    const pattern = pixelAssets.getWoodPlankPattern(ctx);
-    ctx.fillStyle = pattern;
-    ctx.fillRect(bx, by, w, h);
-
-    // Cyan glowing iron curbs
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(bx, by, w, 3);
-    ctx.fillRect(bx, by + h - 3, w, 3);
-
-    // Balusters
-    ctx.fillStyle = '#2dd4bf';
-    for (let rx = 4; rx < w - 4; rx += 14) {
-      ctx.fillRect(bx + rx, by - 5, 3, 6);
-      ctx.fillRect(bx + rx, by + h - 1, 3, 6);
-    }
-    ctx.fillStyle = '#67e8f9';
-    ctx.fillRect(bx, by - 6, w, 2);
-    ctx.fillRect(bx, by + h + 4, w, 2);
-  }
-
-  // -------------------------------------------------------------
-  // 5. Y-SORTED DEPTH RENDERING (Buildings, Trees, Campfire, NPCs, Player!)
-  // -------------------------------------------------------------
+  // 6. Y-SORTED DEPTH RENDERING (Buildings, Fountain, NPCs, Player)
   private drawYSortedEntities(
     ctx: CanvasRenderingContext2D,
     cameraX: number,
@@ -457,124 +246,66 @@ export class WorldRenderer {
         y: baseY,
         render: (c) => {
           c.save();
-          // Violet ambient ground shadow
-          c.fillStyle = 'rgba(15, 10, 28, 0.65)';
+          // Drop shadow
+          c.fillStyle = 'rgba(15, 23, 42, 0.4)';
           c.fillRect(bx - 6, by + b.height - 8, b.width + 12, 16);
 
-          if (b.id === 'guild_hall') {
-            this.drawGuildHall(c, bx, by, b.width, b.height, timeOfDay);
+          if (b.id === 'coffee_shop') {
+            this.drawCoffeeShop(c, bx, by, b.width, b.height);
+          } else if (b.id === 'guild_hall') {
+            this.drawGuildHall(c, bx, by, b.width, b.height);
+          } else if (b.id === 'python_cave') {
+            this.drawPythonCave(c, bx, by, b.width, b.height);
+          } else if (b.id === 'garden') {
+            this.drawGarden(c, bx, by, b.width, b.height);
+          } else if (b.id === 'sql_mines') {
+            this.drawSqlMines(c, bx, by, b.width, b.height);
           } else if (b.id === 'blacksmith') {
-            this.drawBlacksmith(c, bx, by, b.width, b.height, timeOfDay);
-          } else if (b.id === 'coffee_shop') {
-            this.drawCoffeeShop(c, bx, by, b.width, b.height, timeOfDay);
-          } else if (b.id === 'project_bazaar') {
-            this.drawProjectBazaar(c, bx, by, b.width, b.height, timeOfDay);
+            this.drawBlacksmith(c, bx, by, b.width, b.height);
           } else if (b.id === 'library') {
-            this.drawLibrary(c, bx, by, b.width, b.height, timeOfDay);
-          } else if (b.id === 'observatory') {
-            this.drawObservatory(c, bx, by, b.width, b.height, timeOfDay);
-          } else if (b.id === 'academy') {
-            this.drawAcademy(c, bx, by, b.width, b.height, timeOfDay);
+            this.drawLibrary(c, bx, by, b.width, b.height);
+          } else if (b.id === 'home') {
+            this.drawHome(c, bx, by, b.width, b.height);
+          } else if (b.id === 'analytics_tower') {
+            this.drawAnalyticsTower(c, bx, by, b.width, b.height);
+          } else if (b.id === 'ml_lab') {
+            this.drawMLLab(c, bx, by, b.width, b.height);
+          } else if (b.id === 'boss_arena') {
+            this.drawBossArena(c, bx, by, b.width, b.height);
           } else {
-            this.drawGenericCivic(c, bx, by, b.width, b.height, b.name, timeOfDay);
+            this.drawPostOffice(c, bx, by, b.width, b.height);
           }
 
-          this.drawPixelShopSign(c, bx + Math.floor(b.width / 2), by + 32, b.name, b.themeColor);
+          // Overhead floating plaque matching reference screenshot!
+          this.drawBuildingPlaque(c, bx + Math.floor(b.width / 2), by - 12, b.name, b.subtitle);
           c.restore();
         }
       });
     });
 
-    // 2. Celestial Sakura Trees (Vibrant Magenta & Lavender)
-    const trees = [
-      { x: 520, y: 560, r: 42 },
-      { x: 1080, y: 560, r: 46 },
-      { x: 1560, y: 560, r: 46 },
-      { x: 2100, y: 650, r: 50 },
-      { x: 480, y: 960, r: 40 },
-      { x: 1620, y: 1060, r: 42 },
-      { x: 1120, y: 1500, r: 44 },
-      { x: 2050, y: 1460, r: 48 }
-    ];
-    trees.forEach((t) => {
-      const tx = Math.floor(t.x - cameraX);
-      const ty = Math.floor(t.y - cameraY);
-      const baseY = t.y + t.r;
-
-      depthList.push({
-        y: baseY,
-        render: (c) => this.drawCelestialSakuraTree(c, tx, ty, t.r)
-      });
-    });
-
-    // 2b. Ancient Titan Ruin Monoliths (Directly from Hyper Light Drifter)
-    const monoliths = [
-      { x: 380, y: 640, w: 42, h: 90 },
-      { x: 910, y: 440, w: 48, h: 110 },
-      { x: 1980, y: 600, w: 44, h: 95 },
-      { x: 420, y: 1280, w: 46, h: 100 },
-      { x: 1720, y: 1480, w: 40, h: 85 }
-    ];
-    monoliths.forEach((m) => {
-      const mx = Math.floor(m.x - cameraX);
-      const my = Math.floor(m.y - cameraY);
-      depthList.push({
-        y: m.y,
-        render: (c) => pixelAssets.drawAncientRuinMonolith(c, mx, my, m.w, m.h)
-      });
-    });
-
-    // 3. Central Mana Crystal Fountain Basin
+    // 2. Central Town Square Fountain (Centered at 1200, 960)
     depthList.push({
-      y: 1120 + 28,
-      render: (c) => this.drawCentralFountain(c, cameraX, cameraY, timeOfDay)
+      y: 960 + 30,
+      render: (c) => this.drawTownSquareFountain(c, 1200 - cameraX, 960 - cameraY)
     });
 
-    // 4. ANIMATED CAMPFIRE LANDMARK (Directly from Hyper Light Drifter reference image!)
-    depthList.push({
-      y: 1240, // Situated near the town center
-      render: (c) => {
-        const cx = Math.floor(1420 - cameraX);
-        const cy = Math.floor(1240 - cameraY);
-        pixelAssets.drawCampfire(c, cx, cy, this.animTimer);
-      }
-    });
-
-    // 5. District Noticeboard
-    depthList.push({
-      y: 1260 + 10,
-      render: (c) => {
-        const nx = Math.floor(1300 - cameraX);
-        const ny = Math.floor(1260 - cameraY);
-        c.fillStyle = '#26122a';
-        c.fillRect(nx - 2, ny - 16, 4, 16);
-        c.fillRect(nx + 18, ny - 16, 4, 16);
-        c.fillRect(nx - 4, ny - 24, 28, 16);
-        c.fillStyle = '#fef08a';
-        c.fillRect(nx - 1, ny - 21, 8, 10);
-        c.fillRect(nx + 11, ny - 21, 8, 10);
-      }
-    });
-
-    // 6. Bioluminescent Street Lampposts
-    const lampposts = [
-      { x: 1160, y: 940 },
-      { x: 1560, y: 940 },
-      { x: 1160, y: 1300 },
-      { x: 1560, y: 1300 },
-      { x: 920, y: 1140 },
-      { x: 1780, y: 1140 }
+    // 3. Street Lanterns & Decorations
+    const lanterns = [
+      { x: 1060, y: 840 },
+      { x: 1340, y: 840 },
+      { x: 1060, y: 1080 },
+      { x: 1340, y: 1080 },
+      { x: 740, y: 730 },
+      { x: 1850, y: 740 }
     ];
-    lampposts.forEach((lp) => {
-      const lx = Math.floor(lp.x - cameraX);
-      const ly = Math.floor(lp.y - cameraY);
+    lanterns.forEach((lp) => {
       depthList.push({
         y: lp.y,
-        render: (c) => pixelAssets.drawPixelLantern(c, lx, ly, timeOfDay === 'night' || timeOfDay === 'sunset')
+        render: (c) => pixelAssets.drawPixelLantern(c, lp.x - cameraX, lp.y - cameraY, false)
       });
     });
 
-    // 7. NPCs
+    // 4. NPCs
     npcManager.npcs.forEach((npc) => {
       depthList.push({
         y: npc.y,
@@ -582,418 +313,632 @@ export class WorldRenderer {
       });
     });
 
-    // 8. Player Character
+    // 5. Player Character (Aryan)
     depthList.push({
       y: player.state.y,
       render: (c) => player.render(c, cameraX, cameraY)
     });
 
-    // SORT ALL BY BASE Y
+    // Sort all entities by base Y (depth-sorting)
     depthList.sort((a, b) => a.y - b.y);
 
     depthList.forEach((item) => item.render(ctx));
   }
 
-  // Central Prismatic Mana Fountain
-  private drawCentralFountain(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number, timeOfDay: TimeOfDay) {
-    const fx = Math.floor(1360 - cameraX);
-    const fy = Math.floor(1120 - cameraY);
+  // -------------------------------------------------------------
+  // BUILDING ARCHITECTURE (HANDCRAFTED MATCHING REFERENCE SCREENSHOT)
+  // -------------------------------------------------------------
 
-    ctx.save();
-    // Basin Rim
-    ctx.fillStyle = '#1c1530';
-    ctx.fillRect(fx - 46, fy - 28, 92, 56);
-    ctx.fillRect(fx - 36, fy - 36, 72, 72);
-    ctx.strokeStyle = '#22d3ee';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(fx - 46, fy - 28, 92, 56);
+  // 1. Coffee Shop: Timber walls, brown tile roof, GIANT COFFEE CUP on roof!
+  private drawCoffeeShop(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    // Walls
+    ctx.fillStyle = '#5c3a21'; // dark timber
+    ctx.fillRect(x + 12, y + 45, w - 24, h - 45);
+    ctx.fillStyle = '#784d2a';
+    ctx.fillRect(x + 16, y + 50, w - 32, h - 55);
 
-    // Glowing Bioluminescent Cyan Pool inside basin
-    ctx.fillStyle = '#0d9488';
-    ctx.fillRect(fx - 36, fy - 22, 72, 44);
-    ctx.fillRect(fx - 28, fy - 28, 56, 56);
-    ctx.fillStyle = '#2dd4bf';
-    ctx.fillRect(fx - 24, fy - 18, 48, 36);
+    // Roof: Shingled grey-brown gabled roof
+    ctx.fillStyle = '#3e2723';
+    ctx.fillRect(x + 6, y + 30, w - 12, 22);
+    ctx.fillStyle = '#4e342e';
+    ctx.fillRect(x + 16, y + 15, w - 32, 18);
+    ctx.fillRect(x + 28, y + 4, w - 56, 14);
 
-    // Center Pedestal
-    ctx.fillStyle = '#311a47';
-    ctx.fillRect(fx - 12, fy - 14, 24, 24);
+    // Giant Coffee Cup on the Roof (From Reference Screenshot!)
+    const cupX = x + Math.floor(w / 2);
+    const cupY = y - 10;
+    // Cup shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(cupX - 18, cupY + 12, 36, 4);
+    // White Ceramic Cup
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(cupX - 16, cupY - 14, 32, 26);
+    ctx.fillRect(cupX - 14, cupY + 12, 28, 4);
+    // Dark roast coffee surface
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(cupX - 14, cupY - 14, 28, 5);
+    // Cup handle
+    ctx.strokeStyle = '#f8fafc';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(cupX + 16, cupY - 8, 8, 14);
 
-    // Floating Giant Prismatic Mana Crystal (Pulses with cyan, magenta, violet!)
-    const bob = Math.floor(Math.sin(this.animTimer * 3) * 4);
-    const cy = fy - 24 + bob;
+    // Animated Steam puffs rising from coffee
+    const steamBob = Math.sin(this.animTimer * 4) * 3;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fillRect(cupX - 6, cupY - 22 + steamBob, 3, 5);
+    ctx.fillRect(cupX + 3, cupY - 26 - steamBob, 3, 6);
 
-    // Glowing Radial Aura
-    const auraRad = 55 + Math.sin(this.animTimer * 5) * 6;
-    const aura = ctx.createRadialGradient(fx, cy, 4, fx, cy, auraRad);
-    aura.addColorStop(0, 'rgba(34, 211, 238, 0.7)');
-    aura.addColorStop(0.5, 'rgba(217, 70, 239, 0.35)');
-    aura.addColorStop(1, 'transparent');
-    ctx.fillStyle = aura;
-    ctx.beginPath();
-    ctx.arc(fx, cy, auraRad, 0, Math.PI * 2);
-    ctx.fill();
+    // Front Door & Warm Lit Windows
+    const dx = x + Math.floor(w / 2) - 18;
+    const dy = y + h - 50;
+    ctx.fillStyle = '#3e2723';
+    ctx.fillRect(dx, dy, 36, 50);
+    ctx.fillStyle = '#fde047'; // warm amber light
+    ctx.fillRect(dx + 6, dy + 8, 24, 18);
+    ctx.fillStyle = '#3e2723';
+    ctx.fillRect(dx + 17, dy + 8, 2, 18);
 
-    // Crystal Polygon
-    ctx.fillStyle = '#22d3ee';
-    ctx.fillRect(fx - 2, cy - 22, 4, 4);
-    ctx.fillRect(fx - 6, cy - 18, 12, 6);
-    ctx.fillRect(fx - 10, cy - 12, 20, 14);
-    ctx.fillRect(fx - 6, cy + 2, 12, 6);
-    ctx.fillRect(fx - 2, cy + 8, 4, 4);
-
-    // Magenta & Cyan Facet Highlights
-    ctx.fillStyle = '#f43f5e';
-    ctx.fillRect(fx - 4, cy - 14, 4, 12);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(fx - 1, cy - 18, 3, 18);
-
-    if (Math.floor(this.animTimer * 6) % 2 === 0) {
-      ctx.fillStyle = '#fef08a';
-      ctx.fillRect(fx - 14, cy - 8, 2, 2);
-      ctx.fillRect(fx + 12, cy + 4, 2, 2);
-    }
-    ctx.restore();
+    // Porch Barrels
+    pixelAssets.drawPixelBarrel(ctx, x + 24, y + h - 14);
+    pixelAssets.drawPixelBarrel(ctx, x + w - 24, y + h - 14);
   }
 
-  // Guild Hall
-  private drawGuildHall(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, timeOfDay: TimeOfDay) {
-    ctx.fillStyle = '#1e1b36';
-    ctx.fillRect(x, y + 40, w, h - 40);
+  // 2. Guild Hall: Grand two-story timber hall with purple banner & crescent crest
+  private drawGuildHall(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    // Stone foundation
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(x + 10, y + h - 25, w - 20, 25);
 
-    // Violet Slate Roof
-    ctx.fillStyle = '#130d24';
-    for (let r = 0; r < 40; r += 4) {
-      const rw = w + 20 - (r * (w / 40));
-      const rx = x - 10 + (r * (w / 80));
-      ctx.fillRect(Math.floor(rx), y + 40 - r, Math.floor(rw), 4);
-    }
+    // Timber walls
+    ctx.fillStyle = '#4a2810';
+    ctx.fillRect(x + 14, y + 55, w - 28, h - 75);
+    ctx.fillStyle = '#6b3e1b';
+    ctx.fillRect(x + 20, y + 60, w - 40, h - 85);
 
-    // Spires with Cyan Neon Caps
-    ctx.fillStyle = '#18122c';
-    ctx.fillRect(x + 12, y + 10, 32, 60);
-    ctx.fillRect(x + w - 44, y + 10, 32, 60);
-    ctx.fillStyle = '#22d3ee';
-    ctx.fillRect(x + 26, y - 4, 4, 14);
-    ctx.fillRect(x + w - 30, y - 4, 4, 14);
+    // Roof: Stepped gabled roof with dormers
+    ctx.fillStyle = '#3e2723';
+    ctx.fillRect(x + 6, y + 40, w - 12, 22);
+    ctx.fillStyle = '#4e342e';
+    ctx.fillRect(x + 20, y + 20, w - 40, 24);
+    ctx.fillRect(x + 38, y + 4, w - 76, 20);
 
-    // Glowing Rose-Magenta Stained-Glass Window
-    const rx = x + Math.floor(w / 2);
-    const ry = y + 75;
-    ctx.fillStyle = '#f43f5e';
-    ctx.fillRect(rx - 16, ry - 16, 32, 32);
-    ctx.fillStyle = '#d946ef';
-    ctx.fillRect(rx - 10, ry - 10, 20, 20);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(rx - 4, ry - 4, 8, 8);
-    ctx.fillStyle = '#130d24';
-    ctx.fillRect(rx - 16, ry - 1, 32, 2);
-    ctx.fillRect(rx - 1, ry - 16, 2, 32);
+    // Royal Purple Guild Flag with Golden Crest (From Reference Screenshot!)
+    const flagX = x + Math.floor(w / 2) - 18;
+    const flagY = y + 25;
+    ctx.fillStyle = '#6b21a8'; // deep purple
+    ctx.fillRect(flagX, flagY, 36, 44);
+    // V-shaped flag bottom
+    ctx.beginPath();
+    ctx.moveTo(flagX, flagY + 44);
+    ctx.lineTo(flagX + 18, flagY + 54);
+    ctx.lineTo(flagX + 36, flagY + 44);
+    ctx.closePath();
+    ctx.fill();
+    // Golden Crescent / Star Emblem
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(flagX + 13, flagY + 12, 10, 10);
+    ctx.fillStyle = '#6b21a8';
+    ctx.fillRect(flagX + 16, flagY + 10, 8, 10);
 
-    // Guild Banners (Crimson with Gold)
-    const drawBanner = (bx: number) => {
-      ctx.fillStyle = '#9d174d';
-      ctx.fillRect(bx, y + 80, 24, 70);
-      ctx.fillStyle = '#1e1b36';
-      ctx.fillRect(bx + 4, y + 146, 16, 4);
-      ctx.fillRect(bx + 8, y + 142, 8, 4);
-      ctx.fillStyle = '#fde047';
-      ctx.fillRect(bx + 9, y + 100, 6, 18);
-      ctx.fillRect(bx + 5, y + 106, 14, 5);
-    };
-    drawBanner(x + 55);
-    drawBanner(x + w - 79);
-
-    const dw = 52;
-    const dh = 68;
+    // Double Grand Oak Doors
+    const dw = 44;
+    const dh = 55;
     const dx = x + Math.floor(w / 2) - dw / 2;
     const dy = y + h - dh;
-    ctx.fillStyle = '#2b1028';
+    ctx.fillStyle = '#271202';
     ctx.fillRect(dx, dy, dw, dh);
-    ctx.fillStyle = '#120410';
-    ctx.fillRect(dx + 25, dy, 2, dh);
-    ctx.fillStyle = '#22d3ee';
-    ctx.fillRect(dx + 20, dy + 34, 3, 5);
-    ctx.fillRect(dx + 29, dy + 34, 3, 5);
+    ctx.fillStyle = '#f59e0b'; // Brass handles
+    ctx.fillRect(dx + 18, dy + 26, 3, 4);
+    ctx.fillRect(dx + 23, dy + 26, 3, 4);
 
-    pixelAssets.drawPixelLantern(ctx, dx - 16, dy + 20, true);
-    pixelAssets.drawPixelLantern(ctx, dx + dw + 16, dy + 20, true);
+    // Sconces with flame
+    pixelAssets.drawPixelLantern(ctx, dx - 14, dy + 15, true);
+    pixelAssets.drawPixelLantern(ctx, dx + dw + 14, dy + 15, true);
   }
 
-  // Blacksmith Forge
-  private drawBlacksmith(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, timeOfDay: TimeOfDay) {
-    ctx.fillStyle = '#1c1926';
-    ctx.fillRect(x, y + 30, w, h - 30);
-    ctx.fillStyle = '#22d3ee';
-    ctx.fillRect(x, y + 30, w, 2); // neon cyan trim
+  // 3. Python Cave: Mountain cavern mouth with glowing Python logo & blue crystals
+  private drawPythonCave(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    // Rugged mountain boulder dome
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(x + 10, y + 20, w - 20, h - 20);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(x + 24, y + 6, w - 48, 24);
 
-    ctx.fillStyle = '#120e1c';
-    ctx.fillRect(x - 8, y + 15, w + 16, 16);
-    ctx.fillRect(x + 4, y + 2, w - 8, 14);
+    // Cavern Opening (Dark Pit)
+    const mouthW = 80;
+    const mouthH = 90;
+    const mx = x + Math.floor(w / 2) - mouthW / 2;
+    const my = y + h - mouthH;
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(mx, my, mouthW, mouthH);
 
-    // Chimney emitting violet smoke
-    ctx.fillStyle = '#2e253d';
-    ctx.fillRect(x + 20, y - 20, 24, 38);
-    ctx.fillStyle = 'rgba(217, 70, 239, 0.45)';
-    const smokeY = (Math.floor(this.animTimer * 10) % 20);
-    ctx.fillRect(x + 24, y - 26 - smokeY, 8, 8);
-    ctx.fillRect(x + 26, y - 36 - smokeY, 12, 10);
-
-    // Roaring Plasma Forge
-    const fx = x + 35;
-    const fy = y + 75;
-    ctx.fillStyle = '#0f0a17';
-    ctx.fillRect(fx, fy, 68, 68);
-
-    const fireFrame = Math.floor(this.animTimer * 8) % 3;
-    ctx.fillStyle = '#ec4899';
-    ctx.fillRect(fx + 6, fy + 24, 56, 40);
-    ctx.fillStyle = '#f97316';
-    ctx.fillRect(fx + 12 + fireFrame, fy + 16, 44, 36);
-    ctx.fillStyle = '#fef08a';
-    ctx.fillRect(fx + 20 - fireFrame, fy + 8, 28, 30);
-
-    pixelAssets.drawPixelAnvil(ctx, x + w - 65, y + h - 16);
-    pixelAssets.drawPixelBarrel(ctx, x + 16, y + h - 12);
-  }
-
-  // Coffee Shop & Tavern
-  private drawCoffeeShop(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, timeOfDay: TimeOfDay) {
-    ctx.fillStyle = '#2b1a30';
-    ctx.fillRect(x, y + 30, w, h - 30);
-    ctx.fillStyle = '#160c1c';
-    ctx.fillRect(x, y + 30, w, 4);
-    ctx.fillRect(x + 30, y + 30, 4, h - 30);
-    ctx.fillRect(x + w - 34, y + 30, 4, h - 30);
-
-    ctx.fillStyle = '#4a2542';
-    ctx.fillRect(x - 8, y + 16, w + 16, 15);
-    ctx.fillRect(x + 10, y + 2, w - 20, 15);
-
-    // Magenta & Cream Awning
-    const awningY = y + 80;
-    for (let ax = 0; ax < w - 20; ax += 16) {
-      ctx.fillStyle = (ax / 16) % 2 === 0 ? '#c026d3' : '#fdf4ff';
-      ctx.fillRect(x + 10 + ax, awningY, 16, 18);
-    }
-
-    // Glowing Warm Rose-Amber Windows
-    ctx.fillStyle = '#fde047';
-    ctx.fillRect(x + 28, y + 42, 32, 28);
-    ctx.fillRect(x + w - 60, y + 42, 32, 28);
-    ctx.fillStyle = '#160c1c';
-    ctx.fillRect(x + 43, y + 42, 2, 28);
-    ctx.fillRect(x + 28, y + 55, 32, 2);
-    ctx.fillRect(x + w - 45, y + 42, 2, 28);
-    ctx.fillRect(x + w - 60, y + 55, 32, 2);
-
-    ctx.fillStyle = '#4a2647';
-    ctx.fillRect(x + 35, y + h - 16, 20, 8);
-    ctx.fillRect(x + 43, y + h - 8, 4, 8);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(x + 42, y + h - 21, 6, 5);
-  }
-
-  // Project Bazaar (Vibrant Neon-Striped Market Canopy)
-  private drawProjectBazaar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, timeOfDay: TimeOfDay) {
-    ctx.fillStyle = '#291430';
-    ctx.fillRect(x + 16, y + 50, w - 32, h - 50);
-
-    const ch = 48;
-    for (let cx = 0; cx < w; cx += 20) {
-      // Neon Magenta & Electric Cyan Striped Canopy!
-      ctx.fillStyle = (cx / 20) % 2 === 0 ? '#d946ef' : '#22d3ee';
-      ctx.fillRect(x + cx, y + 10, 20, ch);
-      ctx.fillRect(x + cx + 4, y + 10 + ch, 12, 4);
-    }
-
-    for (let lx = 25; lx < w - 20; lx += 35) {
-      ctx.fillStyle = '#fde047';
-      ctx.fillRect(x + lx, y + 10 + ch + 8, 6, 8);
-      ctx.fillStyle = '#171717';
-      ctx.fillRect(x + lx + 2, y + 10 + ch + 4, 2, 4);
-    }
-
-    ctx.fillStyle = '#1e0c24';
-    ctx.fillRect(x + 26, y + h - 42, w - 52, 22);
-
-    pixelAssets.drawPixelCrate(ctx, x + 8, y + h - 10);
-    pixelAssets.drawPixelCrate(ctx, x + 20, y + h - 18);
-    pixelAssets.drawPixelBarrel(ctx, x + w - 16, y + h - 10);
-  }
-
-  // Ancient Library (Gothic Arcane Tower with Cyan Runes)
-  private drawLibrary(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, timeOfDay: TimeOfDay) {
-    ctx.fillStyle = '#1a1f33';
-    ctx.fillRect(x + 16, y + 30, w - 32, h - 30);
-    ctx.fillStyle = '#0d9488'; // glowing verdigris
-    ctx.fillRect(x + 8, y + 10, w - 16, 22);
-    ctx.fillRect(x + 24, y - 4, w - 48, 16);
-
-    for (let win = 0; win < 3; win++) {
-      const wx = x + 35 + win * 65;
-      const wy = y + 55;
-      ctx.fillStyle = '#67e8f9';
-      ctx.fillRect(wx, wy, 32, 54);
-      ctx.fillStyle = '#3b0764';
-      ctx.fillRect(wx + 4, wy + 16, 24, 4);
-      ctx.fillRect(wx + 4, wy + 32, 24, 4);
-      ctx.fillStyle = '#0f172a';
-      ctx.strokeRect(wx, wy, 32, 54);
-    }
-  }
-
-  // Celestial Observatory
-  private drawObservatory(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, timeOfDay: TimeOfDay) {
-    ctx.fillStyle = '#161930';
-    ctx.fillRect(x + 20, y + 45, w - 40, h - 45);
-    ctx.fillStyle = '#3b82f6';
-    ctx.fillRect(x + 24, y + 10, w - 48, 36);
-    ctx.fillRect(x + 38, y - 2, w - 76, 14);
-    ctx.fillStyle = '#22d3ee';
-    ctx.fillRect(x + Math.floor(w / 2) + 6, y + 10, 36, 8);
-    ctx.fillRect(x + Math.floor(w / 2) + 38, y + 8, 8, 12);
-  }
-
-  // Grand Academy
-  private drawAcademy(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, timeOfDay: TimeOfDay) {
-    ctx.fillStyle = '#171a33';
-    ctx.fillRect(x, y + 35, w, h - 35);
-    ctx.fillStyle = '#0284c7';
-    ctx.fillRect(x + 16, y - 10, 24, 46);
-    ctx.fillRect(x + w - 40, y - 10, 24, 46);
+    // Giant Glowing Python Logo Emblem above Cave Mouth (From Reference Screenshot!)
+    const pyX = x + Math.floor(w / 2);
+    const pyY = y + 42;
+    // Blue snake top
     ctx.fillStyle = '#38bdf8';
-    ctx.fillRect(x + 26, y - 24, 4, 15);
-    ctx.fillRect(x + w - 30, y - 24, 4, 15);
+    ctx.fillRect(pyX - 16, pyY - 14, 20, 14);
+    ctx.fillRect(pyX - 10, pyY - 8, 14, 18);
+    // Yellow snake bottom
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(pyX - 4, pyY - 2, 20, 14);
+    ctx.fillRect(pyX - 4, pyY - 12, 14, 18);
+    // Snake eyes
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(pyX - 12, pyY - 11, 3, 3);
+    ctx.fillRect(pyX + 9, pyY + 6, 3, 3);
+
+    // Glowing Cyan Crystals flanking entrance
+    ctx.fillStyle = '#22d3ee';
+    ctx.fillRect(mx - 18, my + 35, 12, 35);
+    ctx.fillRect(mx - 24, my + 48, 8, 22);
+    ctx.fillRect(mx + mouthW + 6, my + 35, 12, 35);
+    ctx.fillRect(mx + mouthW + 16, my + 48, 8, 22);
+    ctx.fillStyle = '#a5f3fc';
+    ctx.fillRect(mx - 15, my + 38, 4, 25);
+    ctx.fillRect(mx + mouthW + 9, my + 38, 4, 25);
   }
 
-  // Generic Civic
-  private drawGenericCivic(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, name: string, timeOfDay: TimeOfDay) {
-    ctx.fillStyle = '#1a182e';
-    ctx.fillRect(x, y + 30, w, h - 30);
-    ctx.fillStyle = '#100e1f';
-    ctx.fillRect(x - 6, y + 15, w + 12, 16);
+  // 4. Garden: Fenced vegetable patch with carrots, cabbages, and flowers
+  private drawGarden(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    // Tilled Soil Bed
+    ctx.fillStyle = '#5c3a21';
+    ctx.fillRect(x + 10, y + 10, w - 20, h - 20);
+    ctx.fillStyle = '#784d2a';
+    ctx.fillRect(x + 16, y + 16, w - 32, h - 32);
+
+    // Wooden Post-and-Rail Fence
+    ctx.fillStyle = '#a16207';
+    // Top & bottom horizontal rails
+    ctx.fillRect(x, y + 8, w, 4);
+    ctx.fillRect(x, y + 18, w, 4);
+    ctx.fillRect(x, y + h - 14, w, 4);
+    ctx.fillRect(x, y + h - 6, w, 4);
+    // Vertical fence posts
+    for (let px = x; px <= x + w; px += 24) {
+      ctx.fillRect(px, y + 4, 5, 20);
+      ctx.fillRect(px, y + h - 18, 5, 20);
+    }
+
+    // Planted Crop Rows (Carrots, Cabbages, Flowers)
+    for (let row = 0; row < 3; row++) {
+      const ry = y + 42 + row * 34;
+      // Orange Carrots with green fronds
+      for (let cx = x + 30; cx < x + 90; cx += 16) {
+        ctx.fillStyle = '#ea580c';
+        ctx.fillRect(cx, ry + 4, 5, 8);
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(cx - 1, ry, 7, 4);
+      }
+      // Green Cabbages
+      for (let cx = x + 110; cx < x + 165; cx += 18) {
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(cx, ry + 2, 10, 10);
+        ctx.fillStyle = '#86efac';
+        ctx.fillRect(cx + 2, ry + 4, 6, 6);
+      }
+      // Pink & Yellow Flowers
+      for (let cx = x + 180; cx < x + w - 25; cx += 14) {
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillRect(cx, ry + 3, 6, 6);
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(cx + 2, ry + 5, 2, 2);
+      }
+    }
   }
 
-  // In-World Pixel Shop Sign (Stylized Cyan/Magenta border)
-  private drawPixelShopSign(ctx: CanvasRenderingContext2D, x: number, y: number, name: string, color: string) {
+  // 5. Town Square Fountain: Multi-tier circular stone fountain with sparkling water spray
+  private drawTownSquareFountain(ctx: CanvasRenderingContext2D, fx: number, fy: number) {
     ctx.save();
-    ctx.font = '700 8px "Press Start 2P", monospace';
-    const textW = ctx.measureText(name).width;
-    const pad = 8;
-    const sx = Math.floor(x - textW / 2 - pad);
-    const sy = Math.floor(y);
+    // Stepped Circular Stone Basin
+    ctx.fillStyle = '#64748b';
+    ctx.beginPath();
+    ctx.arc(fx, fy, 46, 0, Math.PI * 2);
+    ctx.fill();
 
-    ctx.fillStyle = '#0d091a';
-    ctx.fillRect(sx, sy, Math.floor(textW + pad * 2), 16);
-    ctx.fillStyle = '#2dd4bf'; // cyan top accent
-    ctx.fillRect(sx + 1, sy + 1, Math.floor(textW + pad * 2) - 2, 1);
-    ctx.fillStyle = '#f43f5e'; // magenta bottom accent
-    ctx.fillRect(sx + 1, sy + 15, Math.floor(textW + pad * 2) - 2, 1);
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath();
+    ctx.arc(fx, fy, 40, 0, Math.PI * 2);
+    ctx.fill();
 
-    ctx.fillStyle = '#fdf4ff';
+    // Clear Sparkling Water Pool
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    ctx.arc(fx, fy, 34, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(fx, fy, 28, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Central Stone Pillar & Spout
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(fx - 8, fy - 14, 16, 20);
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(fx - 12, fy - 18, 24, 6);
+
+    // Animated Sparkling Water Droplets Spraying
+    const sprayBob = Math.sin(this.animTimer * 6) * 4;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(fx - 1, fy - 26 + sprayBob, 3, 8);
+    ctx.fillRect(fx - 7, fy - 22 + sprayBob, 2, 4);
+    ctx.fillRect(fx + 6, fy - 22 + sprayBob, 2, 4);
+    ctx.fillRect(fx - 12, fy - 14, 2, 2);
+    ctx.fillRect(fx + 11, fy - 14, 2, 2);
+
+    ctx.restore();
+  }
+
+  // 6. SQL Mines: Mine shaft entrance with square timber frame, rails, minecart with crystals
+  private drawSqlMines(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    // Rocky cave hill
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(x + 12, y + 25, w - 24, h - 25);
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(x + 28, y + 10, w - 56, 25);
+
+    // Mine Shaft Opening
+    const mw = 74;
+    const mh = 85;
+    const mx = x + Math.floor(w / 2) - mw / 2;
+    const my = y + h - mh;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(mx, my, mw, mh);
+
+    // Square Heavy Timber Frames (From Reference Screenshot!)
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(mx - 8, my - 8, mw + 16, 12); // top beam
+    ctx.fillRect(mx - 8, my - 8, 12, mh + 8); // left post
+    ctx.fillRect(mx + mw - 4, my - 8, 12, mh + 8); // right post
+    ctx.fillStyle = '#92400e';
+    ctx.fillRect(mx - 4, my - 4, mw + 8, 6);
+
+    // Steel Mine Rails emerging from tunnel
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(mx + 18, my + 45, 4, mh - 45 + 18);
+    ctx.fillRect(mx + mw - 22, my + 45, 4, mh - 45 + 18);
+    ctx.fillStyle = '#451a03';
+    for (let ty = my + 50; ty <= my + mh + 10; ty += 12) {
+      ctx.fillRect(mx + 12, ty, mw - 24, 3);
+    }
+
+    // Wooden Minecart loaded with Glowing Blue Database Crystals
+    const cartX = mx + 16;
+    const cartY = my + mh - 24;
+    ctx.fillStyle = '#5c3a21';
+    ctx.fillRect(cartX, cartY, 42, 22);
+    ctx.fillStyle = '#1e293b'; // iron wheels
+    ctx.fillRect(cartX + 4, cartY + 20, 8, 8);
+    ctx.fillRect(cartX + 30, cartY + 20, 8, 8);
+    // Glowing Database Crystals
+    ctx.fillStyle = '#06b6d4';
+    ctx.fillRect(cartX + 8, cartY - 8, 8, 10);
+    ctx.fillRect(cartX + 22, cartY - 12, 10, 14);
+    ctx.fillStyle = '#67e8f9';
+    ctx.fillRect(cartX + 10, cartY - 6, 4, 6);
+
+    // Hanging miner lantern
+    pixelAssets.drawPixelLantern(ctx, mx + mw + 8, my + 15, true);
+  }
+
+  // 7. Blacksmith: Forge with smoking chimney, open blazing hearth fire, stone hammer on roof
+  private drawBlacksmith(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    // Stone forge masonry
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(x + 12, y + 45, w - 24, h - 45);
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(x + 18, y + 50, w - 36, h - 55);
+
+    // Roof: Timber gabled roof
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(x + 6, y + 32, w - 12, 20);
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(x + 18, y + 16, w - 36, 18);
+    ctx.fillRect(x + 32, y + 4, w - 64, 14);
+
+    // Stone Chimney with billowing smoke
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(x + 24, y - 24, 20, 36);
+    ctx.fillStyle = 'rgba(203, 213, 225, 0.6)';
+    const smokeBob = Math.sin(this.animTimer * 5) * 4;
+    ctx.fillRect(x + 28, y - 36 + smokeBob, 12, 12);
+    ctx.fillRect(x + 32, y - 48 + smokeBob, 16, 14);
+
+    // Giant Stone Hammer mounted on Roof (From Reference Screenshot!)
+    const hamX = x + Math.floor(w / 2);
+    const hamY = y + 8;
+    ctx.fillStyle = '#94a3b8'; // Stone hammer head
+    ctx.fillRect(hamX - 16, hamY - 14, 32, 12);
+    ctx.fillStyle = '#78350f'; // Wooden handle
+    ctx.fillRect(hamX - 3, hamY - 4, 6, 20);
+
+    // Open Roaring Hearth with Blazing Orange Fire
+    const fx = x + Math.floor(w / 2) - 30;
+    const fy = y + h - 60;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(fx, fy, 60, 60);
+
+    const fFrame = Math.floor(this.animTimer * 8) % 3;
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(fx + 8, fy + 22, 44, 36);
+    ctx.fillStyle = '#ea580c';
+    ctx.fillRect(fx + 12 + fFrame, fy + 16, 36, 32);
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(fx + 18 - fFrame, fy + 8, 24, 26);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(fx + 24, fy + 18, 12, 14);
+
+    // Anvil
+    pixelAssets.drawPixelAnvil(ctx, x + w - 38, y + h - 16);
+  }
+
+  // 8. Library: Stone archive with blue-slate roof and books sign
+  private drawLibrary(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    // Stone walls
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(x + 12, y + 45, w - 24, h - 45);
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(x + 18, y + 50, w - 36, h - 55);
+
+    // Cobalt-Blue Slate Shingle Roof (From Reference Screenshot!)
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillRect(x + 6, y + 30, w - 12, 22);
+    ctx.fillStyle = '#1d4ed8';
+    ctx.fillRect(x + 18, y + 14, w - 36, 18);
+    ctx.fillRect(x + 34, y + 2, w - 68, 14);
+
+    // Arched Windows with warm candle glow
+    for (let i = 0; i < 2; i++) {
+      const wx = x + 35 + i * (w - 100);
+      const wy = y + 65;
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(wx, wy, 26, 38);
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(wx + 11, wy, 4, 38);
+      ctx.fillRect(wx, wy + 18, 26, 4);
+    }
+
+    // Wooden Door
+    const dx = x + Math.floor(w / 2) - 18;
+    const dy = y + h - 50;
+    ctx.fillStyle = '#1e1b4b';
+    ctx.fillRect(dx, dy, 36, 50);
+    ctx.fillStyle = '#60a5fa';
+    ctx.fillRect(dx + 26, dy + 24, 3, 4);
+
+    // Book Sign
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(x + 25, y + 35, 14, 10);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(x + 27, y + 37, 10, 6);
+  }
+
+  // 9. Your Home: Red terracotta clay shingle roof house, brick chimney, mailbox
+  private drawHome(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    // White/Cream timber walls
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(x + 14, y + 48, w - 28, h - 48);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(x + 18, y + 52, w - 36, h - 54);
+
+    // Red Terracotta Clay Shingle Roof (From Reference Screenshot!)
+    ctx.fillStyle = '#991b1b';
+    ctx.fillRect(x + 6, y + 32, w - 12, 22);
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(x + 18, y + 16, w - 36, 18);
+    ctx.fillRect(x + 36, y + 4, w - 72, 14);
+
+    // Brick Chimney with smoke
+    ctx.fillStyle = '#7f1d1d';
+    ctx.fillRect(x + w - 44, y - 18, 18, 30);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillRect(x + w - 40, y - 28, 8, 8);
+
+    // Front Door
+    const dx = x + Math.floor(w / 2) - 16;
+    const dy = y + h - 48;
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(dx, dy, 32, 48);
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(dx + 22, dy + 22, 3, 3);
+
+    // Front Windows with curtains
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(x + 30, y + 65, 24, 26);
+    ctx.fillRect(x + w - 54, y + 65, 24, 26);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(x + 40, y + 65, 4, 26);
+    ctx.fillRect(x + w - 44, y + 65, 4, 26);
+
+    // Red Mailbox in Front Yard (From Reference Screenshot!)
+    const mbX = x - 8;
+    const mbY = y + h - 22;
+    ctx.fillStyle = '#78350f'; // post
+    ctx.fillRect(mbX + 4, mbY, 4, 22);
+    ctx.fillStyle = '#dc2626'; // red box
+    ctx.fillRect(mbX, mbY - 12, 12, 12);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(mbX + 2, mbY - 10, 8, 4);
+  }
+
+  // 10. Analytics Tower: Cylindrical stone castle tower with conical roof & blue bar-chart banner
+  private drawAnalyticsTower(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    // Round Tower Stone Body
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(x + 20, y + 55, w - 40, h - 55);
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(x + 26, y + 60, w - 52, h - 65);
+
+    // Battlements
+    for (let bx = x + 16; bx <= x + w - 24; bx += 16) {
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(bx, y + 42, 10, 14);
+    }
+
+    // Conical Slate Roof
+    ctx.fillStyle = '#1e293b';
+    for (let r = 0; r < 36; r += 4) {
+      const rw = w - 20 - r * 4;
+      const rx = x + 10 + r * 2;
+      ctx.fillRect(rx, y + 42 - r, rw, 4);
+    }
+
+    // Blue Banner with Bar-Chart Icon (From Reference Screenshot!)
+    const banX = x + Math.floor(w / 2) - 16;
+    const banY = y + 65;
+    ctx.fillStyle = '#1d4ed8'; // blue banner
+    ctx.fillRect(banX, banY, 32, 42);
+    // V-cut bottom
+    ctx.beginPath();
+    ctx.moveTo(banX, banY + 42);
+    ctx.lineTo(banX + 16, banY + 50);
+    ctx.lineTo(banX + 32, banY + 42);
+    ctx.closePath();
+    ctx.fill();
+    // White Bar-Chart Icon
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(banX + 6, banY + 22, 5, 12);
+    ctx.fillRect(banX + 13, banY + 14, 5, 20);
+    ctx.fillRect(banX + 20, banY + 8, 5, 26);
+
+    // Tower Archway Door
+    const dx = x + Math.floor(w / 2) - 14;
+    const dy = y + h - 42;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(dx, dy, 28, 42);
+  }
+
+  // 11. ML Laboratory
+  private drawMLLab(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    ctx.fillStyle = '#1e1b4b';
+    ctx.fillRect(x + 12, y + 45, w - 24, h - 45);
+    // Glass Dome Roof with Glowing Neural Core
+    ctx.fillStyle = '#ec4899';
+    ctx.fillRect(x + Math.floor(w / 2) - 24, y + 8, 48, 36);
+    ctx.fillStyle = '#f472b6';
+    ctx.fillRect(x + Math.floor(w / 2) - 16, y + 14, 32, 24);
+  }
+
+  // 12. Boss Arena
+  private drawBossArena(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    ctx.fillStyle = '#881337';
+    ctx.fillRect(x + 12, y + 45, w - 24, h - 45);
+    // Crossed Swords Banner
+    ctx.fillStyle = '#f43f5e';
+    ctx.fillRect(x + Math.floor(w / 2) - 18, y + 16, 36, 32);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + Math.floor(w / 2) - 10, y + 24, 20, 4);
+    ctx.fillRect(x + Math.floor(w / 2) - 2, y + 16, 4, 20);
+  }
+
+  // 13. Contact Post Office
+  private drawPostOffice(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    ctx.fillStyle = '#0f766e';
+    ctx.fillRect(x + 12, y + 40, w - 24, h - 40);
+    ctx.fillStyle = '#14b8a6';
+    ctx.fillRect(x + 18, y + 18, w - 36, 24);
+  }
+
+  // -------------------------------------------------------------
+  // OVERHEAD RETRO BUILDING PLAQUE (EXACTLY MATCHING REFERENCE SCREENSHOT)
+  // -------------------------------------------------------------
+  private drawBuildingPlaque(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    title: string,
+    subtitle: string
+  ) {
+    ctx.save();
+    ctx.font = '700 9px "Press Start 2P", monospace';
+    const titleW = ctx.measureText(title).width;
+
+    ctx.font = '600 7px "Press Start 2P", monospace';
+    const subW = ctx.measureText(subtitle).width;
+
+    const boxW = Math.max(titleW, subW) + 24;
+    const boxH = 34;
+    const bx = Math.floor(x - boxW / 2);
+    const by = Math.floor(y);
+
+    // Drop Shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillRect(bx + 3, by + 3, boxW, boxH);
+
+    // Dark Stone Card Body
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(bx, by, boxW, boxH);
+
+    // Amber-Gold Pixel Border (Matching Reference Screenshot!)
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(bx, by, boxW, boxH);
+
+    // Title Text (Golden Yellow)
+    ctx.fillStyle = '#fde047';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(name, x, sy + 9);
+    ctx.textBaseline = 'top';
+    ctx.font = '700 8px "Press Start 2P", monospace';
+    ctx.fillText(title, x, by + 7);
+
+    // Subtitle Text (Muted Slate / Light Blue)
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '600 6px "Press Start 2P", monospace';
+    ctx.fillText(subtitle, x, by + 21);
+
     ctx.restore();
   }
 
-  // Celestial Sakura Tree (Vibrant Magenta, Fuchsia, Lavender)
-  private drawCelestialSakuraTree(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  // Oak Tree (Lush Round Pixel Foliage)
+  private drawOakTree(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
     ctx.save();
-    ctx.fillStyle = 'rgba(15, 10, 28, 0.45)';
-    ctx.fillRect(x - r + 6, y + r - 6, r * 2 - 12, 10);
-
-    // Dark indigo trunk with glowing cyan moss
-    ctx.fillStyle = '#1c152e';
-    ctx.fillRect(x - 6, y + 8, 12, r - 8);
-    ctx.fillStyle = '#2dd4bf';
-    ctx.fillRect(x - 4, y + 14, 2, 6);
-
-    const sway = Math.floor(Math.sin(this.animTimer + x * 0.01) * 3);
-    // Vibrant Hyper Light Drifter Palette: Fuchsia, Magenta, Pink, Pale Lavender
-    const clusters = [
-      { dx: 0, dy: -r * 0.4, cr: r * 0.7, col: '#c026d3' },
-      { dx: -r * 0.35 + sway, dy: -r * 0.15, cr: r * 0.6, col: '#d946ef' },
-      { dx: r * 0.35 + sway, dy: -r * 0.15, cr: r * 0.6, col: '#e879f9' },
-      { dx: 0 + sway, dy: 0, cr: r * 0.55, col: '#f472b6' }
-    ];
-
-    clusters.forEach((c) => {
-      const cx = Math.floor(x + c.dx);
-      const cy = Math.floor(y + c.dy);
-      const rad = Math.floor(c.cr);
-      ctx.fillStyle = c.col;
-      ctx.fillRect(cx - rad, cy - rad + 4, rad * 2, rad * 2 - 8);
-      ctx.fillRect(cx - rad + 4, cy - rad, rad * 2 - 8, rad * 2);
-    });
-
+    // Shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+    ctx.fillRect(x - r + 4, y + r - 4, r * 2 - 8, 8);
+    // Trunk
+    ctx.fillStyle = '#5c3a21';
+    ctx.fillRect(x - 5, y + 6, 10, r - 6);
+    // Foliage Clusters
+    ctx.fillStyle = '#2d6d42';
+    ctx.fillRect(x - r, y - r, r * 2, r * 2 - 6);
+    ctx.fillStyle = '#388251';
+    ctx.fillRect(x - r + 4, y - r + 4, r * 2 - 8, r * 2 - 12);
+    ctx.fillStyle = '#459b63';
+    ctx.fillRect(x - r + 8, y - r + 6, r * 1.2, r * 0.8);
     ctx.restore();
   }
 
-  // Atmospheric Lighting Shader (Hyper Light Drifter cinematic vignette + radiant bloom)
+  // Pine Tree
+  private drawPineTree(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+    ctx.save();
+    ctx.fillStyle = '#5c3a21';
+    ctx.fillRect(x - 4, y + 10, 8, r);
+    ctx.fillStyle = '#1b4332';
+    ctx.beginPath();
+    ctx.moveTo(x, y - r);
+    ctx.lineTo(x + r, y + 10);
+    ctx.lineTo(x - r, y + 10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Atmospheric Lighting Shader (Warm natural sunlight)
   public renderLightingShader(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number, timeOfDay: TimeOfDay) {
     ctx.save();
     const w = ctx.canvas.width;
     const h = ctx.canvas.height;
 
-    // 1. Cinematic Corner Vignette (Leaves the center crisp & brilliant!)
+    // Subtle edge vignette
     const cxCenter = w / 2;
     const cyCenter = h / 2;
     const maxRadius = Math.hypot(cxCenter, cyCenter);
-    const vignette = ctx.createRadialGradient(cxCenter, cyCenter, maxRadius * 0.45, cxCenter, cyCenter, maxRadius);
+    const vignette = ctx.createRadialGradient(cxCenter, cyCenter, maxRadius * 0.55, cxCenter, cyCenter, maxRadius);
     vignette.addColorStop(0, 'transparent');
-    vignette.addColorStop(0.7, 'rgba(20, 10, 34, 0.2)');
-    vignette.addColorStop(1, timeOfDay === 'night' ? 'rgba(12, 6, 22, 0.65)' : 'rgba(25, 10, 42, 0.45)');
+    vignette.addColorStop(1, timeOfDay === 'night' ? 'rgba(10, 15, 30, 0.7)' : 'rgba(15, 23, 42, 0.25)');
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, w, h);
-
-    // 2. Radiant Additive / Screen Bloom for Light Sources
-    ctx.globalCompositeOperation = 'screen';
-
-    // A. Campfire Radiant Amber Bloom (From Reference Image!)
-    const cx = Math.floor(1420 - cameraX);
-    const cy = Math.floor(1240 - cameraY);
-    if (cx > -180 && cx < w + 180 && cy > -180 && cy < h + 180) {
-      const fireGlow = ctx.createRadialGradient(cx, cy, 10, cx, cy, 180);
-      fireGlow.addColorStop(0, 'rgba(254, 240, 138, 0.55)');
-      fireGlow.addColorStop(0.35, 'rgba(251, 113, 133, 0.35)');
-      fireGlow.addColorStop(0.7, 'rgba(192, 38, 211, 0.15)');
-      fireGlow.addColorStop(1, 'transparent');
-      ctx.fillStyle = fireGlow;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 180, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // B. Central Mana Crystal Fountain (Radiant Electric Cyan Bloom)
-    const fx = Math.floor(1360 - cameraX);
-    const fy = Math.floor(1120 - cameraY);
-    if (fx > -220 && fx < w + 220 && fy > -220 && fy < h + 220) {
-      const crystalGlow = ctx.createRadialGradient(fx, fy, 25, fx, fy, 220);
-      crystalGlow.addColorStop(0, 'rgba(34, 211, 238, 0.65)');
-      crystalGlow.addColorStop(0.4, 'rgba(217, 70, 239, 0.35)');
-      crystalGlow.addColorStop(0.8, 'rgba(147, 51, 234, 0.15)');
-      crystalGlow.addColorStop(1, 'transparent');
-      ctx.fillStyle = crystalGlow;
-      ctx.beginPath();
-      ctx.arc(fx, fy, 220, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // C. Blacksmith Plasma Forge Glow
-    const forgeX = Math.floor(1810 - cameraX);
-    const forgeY = Math.floor(960 - cameraY);
-    if (forgeX > -180 && forgeX < w + 180 && forgeY > -180 && forgeY < h + 180) {
-      const forgeGlow = ctx.createRadialGradient(forgeX, forgeY, 15, forgeX, forgeY, 160);
-      forgeGlow.addColorStop(0, 'rgba(249, 115, 22, 0.6)');
-      forgeGlow.addColorStop(0.4, 'rgba(244, 63, 94, 0.35)');
-      forgeGlow.addColorStop(1, 'transparent');
-      ctx.fillStyle = forgeGlow;
-      ctx.beginPath();
-      ctx.arc(forgeX, forgeY, 160, 0, Math.PI * 2);
-      ctx.fill();
-    }
 
     ctx.restore();
   }

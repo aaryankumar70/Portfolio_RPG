@@ -72,9 +72,9 @@ export class NPCManager {
     const nx = Math.floor(npc.x - cameraX);
     const ny = Math.floor(npc.y - cameraY);
 
-    if (npc.id === 'npc_blacksmith') {
+    if (npc.id === 'npc_blacksmith' || npc.id === 'npc_smith') {
       pixelAssets.drawBlacksmithSprite(ctx, nx, ny, animTime);
-    } else if (npc.id === 'npc_librarian') {
+    } else if (npc.id === 'npc_librarian' || npc.id === 'npc_sage') {
       pixelAssets.drawLibrarianSprite(ctx, nx, ny, animTime);
     } else if (npc.id === 'npc_cat') {
       pixelAssets.drawCatSprite(ctx, nx, ny, animTime);

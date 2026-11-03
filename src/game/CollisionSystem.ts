@@ -2,30 +2,29 @@ import { BUILDINGS } from '../data/portfolioData';
 import { CollisionBox } from '../types';
 
 export class CollisionSystem {
-  public worldWidth = 2400;
-  public worldHeight = 1800;
+  public worldWidth = 2800;
+  public worldHeight = 2200;
   public tileSize = 32;
 
   // Solid Collision Boxes (Buildings, Obstacles)
   private solidBoxes: CollisionBox[] = [];
 
-  // Tree Trunk Solid Circles: { x, y, r }
+  // Tree Trunk & Landmark Solid Circles: { x, y, r }
   private solidCircles: { x: number; y: number; r: number }[] = [
-    { x: 520, y: 560, r: 18 },
-    { x: 1080, y: 560, r: 18 },
-    { x: 1560, y: 560, r: 18 },
-    { x: 2100, y: 650, r: 18 },
-    { x: 480, y: 960, r: 16 },
-    { x: 1620, y: 1060, r: 16 },
-    { x: 1120, y: 1500, r: 18 },
-    { x: 2050, y: 1460, r: 18 },
-    // Central Fountain Basin
-    { x: 1360, y: 1120, r: 42 }
+    // Central Town Square Fountain Basin (Directly from reference screenshot)
+    { x: 1200, y: 960, r: 44 },
+    // Perimeter Trees
+    { x: 420, y: 480, r: 24 },
+    { x: 920, y: 460, r: 24 },
+    { x: 1480, y: 460, r: 24 },
+    { x: 2020, y: 460, r: 24 },
+    { x: 420, y: 880, r: 24 },
+    { x: 420, y: 1280, r: 24 },
+    { x: 420, y: 1680, r: 24 },
+    { x: 920, y: 1680, r: 24 },
+    { x: 1480, y: 1680, r: 24 },
+    { x: 2020, y: 1680, r: 24 }
   ];
-
-  // River Segments (Bezier / Polygon zones with bridge gaps)
-  // Bridge 1 (Tavern / Coffee Terrace): x: 575 to 705, y: 1115 to 1165
-  // Bridge 2 (Library Crossing): x: 745 to 875, y: 805 to 855
 
   constructor() {
     this.initCollisionBoxes();
@@ -39,43 +38,36 @@ export class CollisionSystem {
       this.solidBoxes.push(b.collisionBox);
     });
 
-    // 2. Mountain Cliff Barriers (Top zone)
-    this.solidBoxes.push({ x: 0, y: 0, w: 720, h: 420 }); // Upper left mountain
-    this.solidBoxes.push({ x: 1040, y: 0, w: 260, h: 400 }); // Cliff between Observatory & Archive
-    this.solidBoxes.push({ x: 1560, y: 0, w: 200, h: 400 }); // Cliff between Guild & Academy
-    this.solidBoxes.push({ x: 2040, y: 0, w: 360, h: 500 }); // Upper right mountain
+    // 2. Garden Wooden Fence Perimeter (Middle-left)
+    this.solidBoxes.push({ x: 615, y: 915, w: 250, h: 10 }); // Top fence
+    this.solidBoxes.push({ x: 615, y: 915, w: 10, h: 210 }); // Left fence
+    this.solidBoxes.push({ x: 615, y: 1125, w: 90, h: 10 }); // Bottom fence left of gate
+    this.solidBoxes.push({ x: 775, y: 1125, w: 90, h: 10 }); // Bottom fence right of gate
+    this.solidBoxes.push({ x: 865, y: 915, w: 10, h: 210 }); // Right fence
   }
 
   // Check if position is on a walkable stone bridge over the river
   public isOnBridge(x: number, y: number): boolean {
-    // Bridge 1 (Coffee / Tavern Bridge)
-    if (x >= 575 && x <= 705 && y >= 1115 && y <= 1165) return true;
-    // Bridge 2 (Library Bridge)
-    if (x >= 745 && x <= 875 && y >= 805 && y <= 855) return true;
+    // East Bridge Crossing: x: 2460 to 2600, y: 880 to 980
+    if (x >= 2460 && x <= 2600 && y >= 880 && y <= 980) return true;
     return false;
   }
 
-  // Check if position is inside the river water (not on a bridge)
+  // Check if position is inside the eastern river water (not on a bridge)
   public isRiverWater(x: number, y: number): boolean {
     if (this.isOnBridge(x, y)) return false;
 
-    // Approximate the winding river geometry
-    // River flows from (900, 360) down to (450, 1800)
-    if (y < 360) return false;
-
-    // Calculate approximate river center X at given Y
-    const t = (y - 360) / (1800 - 360);
-    const riverCenterX = 900 * (1 - t) + 420 * t + Math.sin(t * Math.PI * 2) * 80;
-    const halfWidth = 55 + t * 15;
-
-    return Math.abs(x - riverCenterX) <= halfWidth;
+    // Eastern River running along x >= 2520 with organic curve
+    if (x < 2480) return false;
+    const wave = Math.sin(y * 0.008) * 40;
+    return x >= (2520 + wave);
   }
 
   // Checks if a point with radius collides with any solid obstacle
   public isSolid(x: number, y: number, radius = 10): boolean {
     // World boundary limits
     if (x - radius < 60 || x + radius > this.worldWidth - 60) return true;
-    if (y - radius < 380 || y + radius > this.worldHeight - 60) return true;
+    if (y - radius < 320 || y + radius > this.worldHeight - 60) return true;
 
     // River collision
     if (this.isRiverWater(x, y)) return true;

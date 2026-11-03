@@ -212,6 +212,73 @@ class SoundManager {
     } catch {}
   }
 
+  // Warm coffee pouring / espresso steam sizzle
+  public playCoffeePour() {
+    if (!this.enabled) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      // White noise buffer for bubbling / brewing steam
+      const bufferSize = this.ctx.sampleRate * 0.4;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const output = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+
+      const whiteNoise = this.ctx.createBufferSource();
+      whiteNoise.buffer = buffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(800, now);
+      filter.frequency.exponentialRampToValueAtTime(1400, now + 0.35);
+      filter.Q.setValueAtTime(3.0, now);
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.08 * this.volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+      whiteNoise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      whiteNoise.start(now);
+      whiteNoise.stop(now + 0.4);
+    } catch {}
+  }
+
+  // Resonant arcane crystal shimmer
+  public playCrystalChime() {
+    if (!this.enabled) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const freqs = [1046.5, 1318.51, 1567.98, 2093.0]; // C6, E6, G6, C7
+      freqs.forEach((freq, idx) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+
+        gain.gain.setValueAtTime(0, now + idx * 0.04);
+        gain.gain.linearRampToValueAtTime(0.09 * this.volume, now + idx * 0.04 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.6);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now + idx * 0.04);
+        osc.stop(now + idx * 0.04 + 0.65);
+      });
+    } catch {}
+  }
+
   // Subtle button click
   public playClick() {
     if (!this.enabled) return;

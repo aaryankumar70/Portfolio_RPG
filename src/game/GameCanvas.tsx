@@ -82,9 +82,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+
+    // Teleport player listener (e.g. clicking Home in Nav bar)
+    const handleTeleport = (e: Event) => {
+      const customEvent = e as CustomEvent<{ x: number; y: number }>;
+      if (customEvent.detail) {
+        playerRef.current.state.x = customEvent.detail.x;
+        playerRef.current.state.y = customEvent.detail.y;
+        playerRef.current.state.path = [];
+      }
+    };
+    window.addEventListener('teleport-player', handleTeleport);
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('teleport-player', handleTeleport);
     };
   }, [onEnterBuilding, activeBuildingModal]);
 

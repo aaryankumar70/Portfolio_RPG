@@ -1,20 +1,31 @@
 import React, { useState } from 'react';
 import {
   Heart,
+  Zap,
+  Gem,
   BookOpen,
-  Briefcase,
   Compass,
   Settings,
   Volume2,
   VolumeX,
-  Sun,
-  Sunset,
-  Moon,
+  Bot,
+  ExternalLink,
   ChevronRight,
-  ChevronDown
+  Sparkles,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle,
+  FileText,
+  User,
+  Swords,
+  Briefcase,
+  Home
 } from 'lucide-react';
-import { TimeOfDay, Quest, BuildingData, NPC } from '../../types';
+import { TimeOfDay, Quest, BuildingData, NPC, ActiveBuff, PlayerStats } from '../../types';
 import { soundManager } from '../../audio/SoundManager';
+import { ARYAN_STATS, INITIAL_BUFFS } from '../../data/portfolioData';
 
 interface GameHUDProps {
   playerLevel: number;
@@ -30,12 +41,16 @@ interface GameHUDProps {
   onOpenInventory: () => void;
   onOpenMap: () => void;
   onOpenSettings: () => void;
+  onOpenCompanion: () => void;
   isSoundMuted: boolean;
   onToggleSound: () => void;
+  onFastTravelToTownSquare: () => void;
 }
 
 export const GameHUD: React.FC<GameHUDProps> = ({
-  playerLevel,
+  playerLevel = 18,
+  playerXp = 1280,
+  maxXp = 2000,
   timeOfDay,
   onTimeOfDayChange,
   quests,
@@ -46,176 +61,388 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   onOpenInventory,
   onOpenMap,
   onOpenSettings,
+  onOpenCompanion,
   isSoundMuted,
-  onToggleSound
+  onToggleSound,
+  onFastTravelToTownSquare
 }) => {
-  const [questExpanded, setQuestExpanded] = useState(false);
-  const nextUncompletedQuest = quests.find(q => !q.completed) || quests[0];
+  const [showMobileControls, setShowMobileControls] = useState<boolean>(true);
+
+  // Active ongoing quest (e.g. Analyze Sales Dashboard)
+  const ongoingQuest = quests.find(q => q.id === 'quest_sales') || quests[0];
 
   return (
     <div className="absolute inset-0 pointer-events-none select-none overflow-hidden z-20 font-pixel">
-      {/* 1. TOP-LEFT: MINIMAL AUTHENTIC PIXEL RPG HEALTH & LEVEL BADGE */}
-      <div className="absolute top-3 left-3 pointer-events-auto flex items-center gap-2 pixel-panel px-3 py-2 bg-[#12141f]/95 shadow-md">
-        {/* Pixel Avatar Pip */}
-        <div className="w-7 h-7 bg-[#1c2236] border border-[#3b4668] flex items-center justify-center shrink-0">
-          <div className="w-4 h-4 bg-[#831b26] relative">
-            <div className="w-3 h-2 bg-[#f5cda4] mx-auto" />
-            <div className="w-1 h-1 bg-[#38bdf8] absolute top-1 left-1" />
+      {/* ============================================================== */}
+      {/* 1. TOP NAVIGATION BAR (Exact Match to Reference Screenshot)    */}
+      {/* ============================================================== */}
+      <nav className="absolute top-0 inset-x-0 h-12 bg-[#090e17]/90 backdrop-blur-sm border-b border-[#1e2a3a] px-4 sm:px-6 flex items-center justify-between pointer-events-auto shadow-md">
+        {/* Brand Title with Star */}
+        <div
+          onClick={() => {
+            soundManager.playClick();
+            onFastTravelToTownSquare();
+          }}
+          className="flex items-center gap-2 cursor-pointer group"
+        >
+          <span className="text-[#f59e0b] text-xs">✨</span>
+          <span className="text-xs sm:text-sm font-bold tracking-wider text-slate-100 group-hover:text-[#fde047] transition-colors">
+            ARYAN'S ADVENTURE
+          </span>
+        </div>
+
+        {/* Navigation Links */}
+        <div className="flex items-center gap-1 sm:gap-4 text-[9px] sm:text-[10px] text-slate-300">
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              onFastTravelToTownSquare();
+            }}
+            className="px-2 py-1 hover:text-[#fde047] flex items-center gap-1 transition-colors"
+          >
+            <span>🏠</span>
+            <span className="hidden sm:inline">Home</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              onEnterBuilding('home');
+            }}
+            className="px-2 py-1 hover:text-[#fde047] flex items-center gap-1 transition-colors"
+          >
+            <span>👤</span>
+            <span className="hidden sm:inline">About</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              onEnterBuilding('blacksmith');
+            }}
+            className="px-2 py-1 hover:text-[#fde047] flex items-center gap-1 transition-colors"
+          >
+            <span>⚔</span>
+            <span className="hidden sm:inline">Skills</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              onEnterBuilding('boss_arena');
+            }}
+            className="px-2 py-1 hover:text-[#fde047] flex items-center gap-1 transition-colors"
+          >
+            <span>📜</span>
+            <span className="hidden sm:inline">Projects</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              onEnterBuilding('guild_hall');
+            }}
+            className="px-2 py-1 hover:text-[#fde047] flex items-center gap-1 transition-colors"
+          >
+            <span>💼</span>
+            <span className="hidden sm:inline">Experience</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              onEnterBuilding('post_office');
+            }}
+            className="px-2.5 py-1 bg-[#16273b] hover:bg-[#203750] text-[#38bdf8] border border-[#0284c7] rounded-sm flex items-center gap-1 transition-colors"
+          >
+            <FileText className="w-3 h-3 text-[#38bdf8]" />
+            <span>Resume</span>
+          </button>
+
+          <button
+            onClick={onToggleSound}
+            className="p-1 text-slate-400 hover:text-white transition-colors ml-1"
+            title={isSoundMuted ? 'Unmute Audio' : 'Mute Audio'}
+          >
+            {isSoundMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      </nav>
+
+      {/* ============================================================== */}
+      {/* 2. TOP-LEFT PLAYER PROFILE CARD (Exact Match to Screenshot)    */}
+      {/* ============================================================== */}
+      <div className="absolute top-16 left-4 pointer-events-auto w-64 sm:w-72 bg-[#0c141f]/95 border-2 border-[#22354c] shadow-[0_8px_30px_rgba(0,0,0,0.85)] p-4 rounded-sm">
+        {/* Profile Header Row */}
+        <div className="flex items-center gap-3 mb-3">
+          {/* Avatar Box */}
+          <div className="w-12 h-12 bg-[#16222f] border-2 border-[#38bdf8] flex items-center justify-center shrink-0 shadow-inner relative overflow-hidden">
+            <div className="w-8 h-8 relative">
+              <div className="absolute top-0 left-1 w-6 h-3 bg-[#0f172a]" />
+              <div className="absolute top-2.5 left-1.5 w-5 h-3 bg-[#fed7aa]" />
+              <div className="absolute top-3.5 left-2 w-1 h-1 bg-[#0284c7]" />
+              <div className="absolute top-3.5 right-2 w-1 h-1 bg-[#0284c7]" />
+              <div className="absolute top-5 left-1 w-6 h-3 bg-[#2563eb]" />
+              <div className="absolute top-5 left-3 w-2 h-3 bg-white" />
+            </div>
+            <div className="absolute top-0.5 right-0.5 w-2 h-2 bg-[#38bdf8] rounded-full animate-ping opacity-60" />
+          </div>
+
+          {/* Name, Subtitle, Level & XP */}
+          <div className="flex-1">
+            <div className="flex items-baseline justify-between">
+              <h3 className="text-sm font-bold text-white tracking-wide">Aryan</h3>
+              <span className="text-[9px] text-[#fde047]">Lv. {playerLevel}</span>
+            </div>
+            <p className="text-[9px] text-[#38bdf8] font-sans font-medium">Data Explorer</p>
+            {/* XP Bar */}
+            <div className="mt-1">
+              <div className="flex justify-between text-[7px] text-[#94a3b8] mb-0.5">
+                <span>XP</span>
+                <span>{playerXp} / {maxXp}</span>
+              </div>
+              <div className="w-full h-1.5 bg-[#16222f] border border-[#23354a] overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#0284c7] to-[#38bdf8]"
+                  style={{ width: `${Math.min(100, (playerXp / maxXp) * 100)}%` }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Name & Pips */}
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between gap-3 text-[9px] text-[#e2e8f0]">
-            <span className="text-[#fde047] tracking-wider">TheDevNomad</span>
-            <span className="text-[8px] text-[#94a3b8]">LV.{playerLevel}</span>
+        {/* Vital Attribute Meters (HP, Energy, Focus) */}
+        <div className="space-y-1.5 py-2 border-t border-[#1e2e42] text-[8px] text-slate-300 font-sans">
+          {/* HP */}
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-rose-400">
+              <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+              <span>HP</span>
+            </span>
+            <span className="font-pixel text-[8px] text-slate-200">100 / 100</span>
           </div>
 
-          {/* Minimal 3-pip Health Indicator */}
-          <div className="flex items-center gap-1">
-            <Heart className="w-3 h-3 text-[#e11d48] fill-[#e11d48]" />
-            <div className="w-20 h-2 pixel-bar-container overflow-hidden">
-              <div className="h-full w-full pixel-bar-fill-hp" />
+          {/* Energy */}
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-amber-400">
+              <Zap className="w-3 h-3 fill-amber-400 text-amber-400" />
+              <span>Energy</span>
+            </span>
+            <span className="font-pixel text-[8px] text-slate-200">80 / 100</span>
+          </div>
+
+          {/* Focus */}
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-sky-400">
+              <Gem className="w-3 h-3 fill-sky-400 text-sky-400" />
+              <span>Focus</span>
+            </span>
+            <span className="font-pixel text-[8px] text-slate-200">70 / 100</span>
+          </div>
+        </div>
+
+        {/* CURRENT QUEST SECTION */}
+        <div className="pt-2 border-t border-[#1e2e42]">
+          <span className="text-[8px] text-slate-400 tracking-wider uppercase block mb-1">
+            CURRENT QUEST
+          </span>
+          <h4 className="text-[9px] font-bold text-white leading-tight">
+            Analyze Sales Dashboard
+          </h4>
+          <p className="text-[8px] text-slate-400 font-sans mt-0.5">
+            Collect data and build insights
+          </p>
+          <div className="mt-1.5">
+            <div className="flex justify-between text-[7px] text-[#fde047] mb-0.5">
+              <span>Progress</span>
+              <span>60%</span>
             </div>
+            <div className="w-full h-1.5 bg-[#16222f] border border-[#23354a] overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-[#d97706] to-[#f59e0b] w-[60%]" />
+            </div>
+          </div>
+        </div>
+
+        {/* ACTIVE BUFFS SECTION */}
+        <div className="pt-2.5 mt-2 border-t border-[#1e2e42] space-y-1 text-[8px]">
+          <span className="text-slate-400 tracking-wider uppercase block mb-1">
+            ACTIVE BUFFS
+          </span>
+          <div className="flex items-center justify-between text-amber-300">
+            <span className="flex items-center gap-1">
+              <span>☕</span>
+              <span>Coffee Lover</span>
+            </span>
+            <span className="text-[7px] text-slate-400 font-sans">+5 Focus</span>
+          </div>
+          <div className="flex items-center justify-between text-sky-300">
+            <span className="flex items-center gap-1">
+              <span>📖</span>
+              <span>Night Owl</span>
+            </span>
+            <span className="text-[7px] text-slate-400 font-sans">+10 XP from quests</span>
           </div>
         </div>
       </div>
 
-      {/* 2. TOP-RIGHT: COMPACT RETRO ACTION TOOLBAR */}
-      <div className="absolute top-3 right-3 pointer-events-auto flex items-center gap-1.5">
-        <button
-          onClick={() => { soundManager.playClick(); onOpenQuests(); }}
-          className="pixel-btn px-2.5 py-1.5 flex items-center gap-1.5 text-[9px]"
-          title="Quests [J]"
-        >
-          <BookOpen className="w-3.5 h-3.5 text-[#fde047]" />
-          <span className="hidden sm:inline">QUESTS</span>
-          <span className="text-[7px] text-[#94a3b8]">[J]</span>
-        </button>
+      {/* ============================================================== */}
+      {/* 3. TOP-RIGHT COMPANION CARD (Exact Match to Screenshot)        */}
+      {/* ============================================================== */}
+      <div className="absolute top-16 right-4 pointer-events-auto w-56 sm:w-64 bg-[#0c141f]/95 border-2 border-[#22354c] shadow-[0_8px_30px_rgba(0,0,0,0.85)] p-3 rounded-sm">
+        <span className="text-[8px] text-slate-400 tracking-wider uppercase block mb-2">
+          Companion
+        </span>
 
-        <button
-          onClick={() => { soundManager.playClick(); onOpenInventory(); }}
-          className="pixel-btn px-2.5 py-1.5 flex items-center gap-1.5 text-[9px]"
-          title="Inventory [I]"
-        >
-          <Briefcase className="w-3.5 h-3.5 text-[#38bdf8]" />
-          <span className="hidden sm:inline">ITEMS</span>
-          <span className="text-[7px] text-[#94a3b8]">[I]</span>
-        </button>
+        <div className="flex items-start gap-2.5 mb-2.5">
+          <div className="w-8 h-8 rounded-full bg-[#0284c7] border border-[#38bdf8] flex items-center justify-center shrink-0 shadow-[0_0_8px_rgba(56,189,248,0.5)]">
+            <Bot className="w-4 h-4 text-white animate-pulse" />
+          </div>
+          <p className="text-[9px] text-slate-200 font-sans leading-tight">
+            I'm your AI companion. Ask me anything!
+          </p>
+        </div>
 
-        <button
-          onClick={() => { soundManager.playClick(); onOpenMap(); }}
-          className="pixel-btn px-2.5 py-1.5 flex items-center gap-1.5 text-[9px]"
-          title="World Map [M]"
-        >
-          <Compass className="w-3.5 h-3.5 text-[#a855f7]" />
-          <span className="hidden sm:inline">MAP</span>
-          <span className="text-[7px] text-[#94a3b8]">[M]</span>
-        </button>
-
-        {/* Time of Day Cycle Button */}
         <button
           onClick={() => {
             soundManager.playClick();
-            const cycle: TimeOfDay[] = ['morning', 'afternoon', 'sunset', 'night'];
-            const nextIdx = (cycle.indexOf(timeOfDay) + 1) % cycle.length;
-            onTimeOfDayChange(cycle[nextIdx]);
+            onOpenCompanion();
           }}
-          className="pixel-btn px-2 py-1.5 text-[9px]"
-          title="Cycle Day/Night Time"
+          className="w-full py-1.5 bg-[#16273b] hover:bg-[#203750] text-[#38bdf8] border border-[#0284c7] text-[8px] flex items-center justify-center gap-1.5 cursor-pointer transition-colors active:translate-y-0.5"
         >
-          {timeOfDay === 'morning' && <Sun className="w-3.5 h-3.5 text-[#fde047]" />}
-          {timeOfDay === 'afternoon' && <Sun className="w-3.5 h-3.5 text-[#f97316]" />}
-          {timeOfDay === 'sunset' && <Sunset className="w-3.5 h-3.5 text-[#f43f5e]" />}
-          {timeOfDay === 'night' && <Moon className="w-3.5 h-3.5 text-[#93c5fd]" />}
-        </button>
-
-        {/* Sound Toggle */}
-        <button
-          onClick={onToggleSound}
-          className="pixel-btn px-2 py-1.5 text-[9px]"
-          title={isSoundMuted ? 'Unmute Sound' : 'Mute Sound'}
-        >
-          {isSoundMuted ? (
-            <VolumeX className="w-3.5 h-3.5 text-[#f43f5e]" />
-          ) : (
-            <Volume2 className="w-3.5 h-3.5 text-[#38bdf8]" />
-          )}
-        </button>
-
-        <button
-          onClick={() => { soundManager.playClick(); onOpenSettings(); }}
-          className="pixel-btn px-2 py-1.5 text-[9px]"
-          title="Settings"
-        >
-          <Settings className="w-3.5 h-3.5 text-[#94a3b8]" />
+          <span>Chat</span>
         </button>
       </div>
 
-      {/* 3. SUBTLE COLLAPSIBLE 1-LINE QUEST NOTIFICATION (NOT A GIANT CARD!) */}
-      {nextUncompletedQuest && (
-        <div className="absolute top-14 right-3 pointer-events-auto">
+      {/* ============================================================== */}
+      {/* 4. PROXIMITY INTERACTION BANNER (Center Viewport Floating)      */}
+      {/* ============================================================== */}
+      {nearBuilding && (
+        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-auto z-30 animate-bounce">
           <div
-            onClick={() => { soundManager.playClick(); setQuestExpanded(!questExpanded); }}
-            className="pixel-panel px-3 py-1.5 bg-[#12141f]/90 text-[8px] text-[#cbd5e1] flex items-center gap-2 cursor-pointer hover:bg-[#1c2236] transition-colors"
+            onClick={() => onEnterBuilding(nearBuilding.id)}
+            className="px-5 py-2.5 bg-[#0f1722]/95 border-2 border-[#f59e0b] shadow-[0_6px_25px_rgba(0,0,0,0.9)] flex items-center gap-3 cursor-pointer hover:brightness-110 active:translate-y-1"
           >
-            <span className="text-[#fde047]">✦</span>
-            <span className="text-[#94a3b8]">QUEST:</span>
-            <span className="text-[#f8fafc] font-bold">{nextUncompletedQuest.title}</span>
-            {questExpanded ? <ChevronDown className="w-3 h-3 text-[#94a3b8]" /> : <ChevronRight className="w-3 h-3 text-[#94a3b8]" />}
-          </div>
-
-          {/* Collapsible mini quest view */}
-          {questExpanded && (
-            <div className="pixel-panel p-3 mt-1 w-64 bg-[#0d0f18]/95 text-[8px] text-[#94a3b8] space-y-2">
-              <p className="text-[#e2e8f0] leading-relaxed">{nextUncompletedQuest.description}</p>
-              <div className="flex justify-between items-center pt-1 border-t border-[#23283b]">
-                <span className="text-[#fde047]">+{nextUncompletedQuest.rewardXp} EXP</span>
-                <button
-                  onClick={() => { soundManager.playClick(); onOpenQuests(); }}
-                  className="text-[#38bdf8] underline"
-                >
-                  View Journal [J]
-                </button>
+            <div className="px-1.5 py-0.5 bg-[#f59e0b] text-[#0f1722] text-[9px] font-bold">
+              PRESS E
+            </div>
+            <div>
+              <div className="text-xs text-white font-bold tracking-wider">
+                ENTER {nearBuilding.name.toUpperCase()}
+              </div>
+              <div className="text-[8px] text-[#fde047] font-sans">
+                {nearBuilding.subtitle}
               </div>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* 4. CONTEXT-SENSITIVE INTERACTION PROMPT (GLOWING HYPER LIGHT DRIFTER ACTION PILL) */}
-      {nearBuilding && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-auto">
-          <button
-            onClick={() => {
-              soundManager.playEnterBuilding();
-              onEnterBuilding(nearBuilding.id);
-            }}
-            className="px-4 py-2.5 flex items-center gap-2.5 text-[10px] text-white tracking-wider cursor-pointer bg-[#86198f] hover:bg-[#a21caf] border-2 border-[#22d3ee] shadow-[0_0_25px_rgba(34,211,238,0.45)] transition-all active:translate-y-0.5"
-          >
-            <span className="bg-[#120824] px-1.5 py-0.5 text-[#22d3ee] border border-[#22d3ee] text-[9px] shadow-[0_0_6px_#22d3ee]">
-              [E]
-            </span>
-            <span>ENTER {nearBuilding.name.toUpperCase()}</span>
-          </button>
-        </div>
-      )}
-
-      {nearNPC && !nearBuilding && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-auto">
-          <div className="px-4 py-2 bg-[#140b24]/95 text-[9px] text-[#fdf4ff] border-2 border-[#22d3ee] flex items-center gap-2 shadow-[0_0_20px_rgba(34,211,238,0.35)]">
-            <span className="bg-[#1e0e36] px-1.5 py-0.5 text-[#22d3ee] border border-[#22d3ee] text-[8px]">
-              [E]
-            </span>
-            <span>TALK TO {nearNPC.name.toUpperCase()}</span>
           </div>
         </div>
       )}
 
-      {/* 5. MINIMAL BOTTOM-LEFT CONTROLS REMINDER */}
-      <div className="absolute bottom-3 left-3 pointer-events-auto text-[8px] text-[#64748b] bg-[#090b12]/80 px-2 py-1 border border-[#1e2436] hidden md:block">
-        WASD/ARROWS: MOVE · SHIFT: SPRINT · [E]: INTERACT · CLICK TO MOVE
+      {/* ============================================================== */}
+      {/* 5. ON-SCREEN MOBILE TOUCH CONTROLS (D-Pad & Action Button)      */}
+      {/* ============================================================== */}
+      <div className="sm:hidden absolute bottom-14 left-4 pointer-events-auto z-20 flex flex-col items-center gap-1 opacity-85">
+        <button
+          onPointerDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }))}
+          onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }))}
+          className="w-10 h-10 bg-[#16222f] border border-[#2b3d54] text-white flex items-center justify-center active:bg-[#0284c7]"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+        <div className="flex gap-2">
+          <button
+            onPointerDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA' }))}
+            onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyA' }))}
+            className="w-10 h-10 bg-[#16222f] border border-[#2b3d54] text-white flex items-center justify-center active:bg-[#0284c7]"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <button
+            onPointerDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS' }))}
+            onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyS' }))}
+            className="w-10 h-10 bg-[#16222f] border border-[#2b3d54] text-white flex items-center justify-center active:bg-[#0284c7]"
+          >
+            <ArrowDown className="w-5 h-5" />
+          </button>
+          <button
+            onPointerDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyD' }))}
+            onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyD' }))}
+            className="w-10 h-10 bg-[#16222f] border border-[#2b3d54] text-white flex items-center justify-center active:bg-[#0284c7]"
+          >
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
       </div>
+
+      {/* Action button for mobile */}
+      <div className="sm:hidden absolute bottom-16 right-4 pointer-events-auto z-20">
+        <button
+          onClick={() => {
+            if (nearBuilding) onEnterBuilding(nearBuilding.id);
+            else soundManager.playClick();
+          }}
+          className="w-14 h-14 rounded-full bg-[#f59e0b] text-[#0f1722] border-2 border-[#fef08a] font-bold text-xs shadow-lg flex items-center justify-center active:scale-95"
+        >
+          ENTER
+        </button>
+      </div>
+
+      {/* ============================================================== */}
+      {/* 6. BOTTOM FOOTER BAR (Exact Match to Reference Screenshot)     */}
+      {/* ============================================================== */}
+      <footer className="absolute bottom-0 inset-x-0 h-9 bg-[#090e17]/95 border-t border-[#1e2a3a] px-4 sm:px-6 flex items-center justify-between text-[8px] text-slate-400 pointer-events-auto">
+        {/* Left: Built with love by Aryan */}
+        <div className="flex items-center gap-1.5">
+          <span>Built with</span>
+          <span className="text-rose-500">❤️</span>
+          <span>by Aryan</span>
+        </div>
+
+        {/* Center: Social Icons */}
+        <div className="flex items-center gap-4 text-slate-300">
+          <a
+            href="https://github.com/thedevnomad"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-white transition-colors"
+            title="GitHub"
+          >
+            GitHub
+          </a>
+          <span>·</span>
+          <a
+            href="https://linkedin.com/in/thedevnomad"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-white transition-colors"
+            title="LinkedIn"
+          >
+            LinkedIn
+          </a>
+          <span>·</span>
+          <a
+            href="https://twitter.com"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-white transition-colors"
+            title="Twitter / X"
+          >
+            Twitter
+          </a>
+          <span>·</span>
+          <button
+            onClick={() => onEnterBuilding('post_office')}
+            className="hover:text-white transition-colors"
+            title="Contact Post Office"
+          >
+            Email
+          </button>
+        </div>
+
+        {/* Right: Copyright */}
+        <div>
+          <span>© 2024 Aryan's Adventure</span>
+        </div>
+      </footer>
     </div>
   );
 };

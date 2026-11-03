@@ -3,6 +3,27 @@
 
 export class PixelArtAssets {
   private cache: Map<string, HTMLCanvasElement> = new Map();
+  private imageCache: Map<string, HTMLImageElement> = new Map();
+
+  // Async loader and cache for production sprite art
+  public loadImage(key: string, src: string): Promise<HTMLImageElement> {
+    if (this.imageCache.has(key)) {
+      return Promise.resolve(this.imageCache.get(key)!);
+    }
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        this.imageCache.set(key, img);
+        resolve(img);
+      };
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  public getImage(key: string): HTMLImageElement | undefined {
+    return this.imageCache.get(key);
+  }
 
   private createCanvas(width: number, height: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
     const canvas = document.createElement('canvas');
@@ -24,78 +45,89 @@ export class PixelArtAssets {
   }
 
   // -------------------------------------------------------------
-  // 1. TILE PATTERNS (Vibrant Hyper Light Drifter Fantasy Style)
+  // 1. TILE PATTERNS (Vibrant 16-Bit / 32-Bit RPG Style)
   // -------------------------------------------------------------
 
-  // Flagstone Pattern: Radiant pale lavender & rose-mauve stone with cyan-lit runes
-  public getFlagstonePattern(ctx: CanvasRenderingContext2D): CanvasPattern {
-    const key = 'pattern_flagstone_fantasy_v2';
+  // Natural Green Grass Pattern (Matching Reference Screenshot)
+  public getGrassPattern(ctx: CanvasRenderingContext2D): CanvasPattern {
+    const key = 'pattern_natural_grass_rpg';
     if (!this.cache.has(key)) {
       const { canvas, ctx: c } = this.createCanvas(32, 32);
-      // Base deep royal plum grout seam
-      this.fillPixelRect(c, 0, 0, 32, 32, '#2a1638');
+      // Base vibrant meadow green
+      this.fillPixelRect(c, 0, 0, 32, 32, '#388251');
 
-      // Tile 1 (top-left) - Radiant Lavender stone plateau
-      this.fillPixelRect(c, 1, 1, 14, 14, '#cfa4c4');
-      this.fillPixelRect(c, 2, 2, 12, 12, '#dfb8d4');
-      this.setPixel(c, 3, 3, '#eed4e7');
-      this.setPixel(c, 4, 3, '#eed4e7');
-      // Bioluminescent cyan rune specks
-      this.setPixel(c, 10, 8, '#22d3ee');
-      this.setPixel(c, 11, 8, '#67e8f9');
+      // Varied grass clumps and natural dithering
+      const patches = [
+        { x: 2, y: 3, w: 8, h: 6, col: '#459b63' },
+        { x: 18, y: 5, w: 10, h: 7, col: '#459b63' },
+        { x: 6, y: 18, w: 11, h: 8, col: '#2d6d42' },
+        { x: 22, y: 20, w: 8, h: 7, col: '#459b63' }
+      ];
+      patches.forEach(p => this.fillPixelRect(c, p.x, p.y, p.w, p.h, p.col));
 
-      // Tile 2 (top-right) - Soft dusty rose stone
-      this.fillPixelRect(c, 17, 1, 14, 14, '#c59cb9');
-      this.fillPixelRect(c, 18, 2, 12, 12, '#d6adc8');
-      this.setPixel(c, 19, 3, '#ebd0e2');
-      // Vivid magenta rune
-      this.setPixel(c, 22, 10, '#f43f5e');
+      // Grass blades highlights
+      const blades = [
+        [4, 4], [5, 3], [12, 10], [20, 7], [21, 6], [27, 14],
+        [8, 20], [9, 19], [15, 26], [24, 22], [25, 21], [30, 28]
+      ];
+      c.fillStyle = '#66ca89';
+      blades.forEach(([bx, by]) => c.fillRect(bx, by, 1, 2));
 
-      // Tile 3 (bottom-left)
-      this.fillPixelRect(c, 1, 17, 14, 14, '#c59cb9');
-      this.fillPixelRect(c, 2, 18, 12, 12, '#d6adc8');
-      this.setPixel(c, 3, 19, '#ebd0e2');
-      this.setPixel(c, 8, 24, '#2dd4bf');
-
-      // Tile 4 (bottom-right)
-      this.fillPixelRect(c, 17, 17, 14, 14, '#cfa4c4');
-      this.fillPixelRect(c, 18, 18, 12, 12, '#dfb8d4');
-      this.setPixel(c, 19, 19, '#eed4e7');
-      this.setPixel(c, 26, 26, '#e879f9');
-
-      // Grout seams with subtle violet-shadow
-      c.fillStyle = '#22112e';
-      c.fillRect(0, 0, 32, 1);
-      c.fillRect(0, 16, 32, 1);
-      c.fillRect(0, 0, 1, 32);
-      c.fillRect(16, 0, 1, 32);
+      // Tiny natural wild flowers (Red, Yellow, White dots)
+      this.setPixel(c, 7, 8, '#fde047');   // yellow daisy
+      this.setPixel(c, 26, 12, '#f43f5e'); // red poppy
+      this.setPixel(c, 14, 22, '#fdf4ff'); // white clover
+      this.setPixel(c, 29, 25, '#c084fc'); // lavender violet
 
       this.cache.set(key, canvas);
     }
     return ctx.createPattern(this.cache.get(key)!, 'repeat')!;
   }
 
-  // Cobblestone Pattern: Mauve-slate pavers with glowing cyan circuit inlays
+  // Cobblestone Road Pattern: Warm earthy stone road matching reference screenshot
   public getCobblePattern(ctx: CanvasRenderingContext2D): CanvasPattern {
-    const key = 'pattern_cobble_fantasy_v2';
+    const key = 'pattern_cobble_road_rpg';
     if (!this.cache.has(key)) {
       const { canvas, ctx: c } = this.createCanvas(24, 24);
-      this.fillPixelRect(c, 0, 0, 24, 24, '#1f132b');
+      this.fillPixelRect(c, 0, 0, 24, 24, '#8b5e3c'); // Earthy grout seam
 
       const stones = [
-        { x: 1, y: 1, w: 10, h: 6, col: '#a27b9c', hi: '#be99b8' },
-        { x: 13, y: 1, w: 9, h: 5, col: '#8d6887', hi: '#a983a3' },
-        { x: 1, y: 9, w: 7, h: 6, col: '#8d6887', hi: '#a983a3' },
-        { x: 10, y: 8, w: 12, h: 7, col: '#a27b9c', hi: '#be99b8' },
-        { x: 2, y: 17, w: 11, h: 6, col: '#a27b9c', hi: '#be99b8' },
-        { x: 15, y: 17, w: 7, h: 6, col: '#7e5b79', hi: '#997393' }
+        { x: 1, y: 1, w: 10, h: 6, col: '#d4a373', hi: '#faedcd' },
+        { x: 13, y: 1, w: 9, h: 5, col: '#c59263', hi: '#e9d8a6' },
+        { x: 1, y: 9, w: 7, h: 6, col: '#c59263', hi: '#e9d8a6' },
+        { x: 10, y: 8, w: 12, h: 7, col: '#d4a373', hi: '#faedcd' },
+        { x: 2, y: 17, w: 11, h: 6, col: '#d4a373', hi: '#faedcd' },
+        { x: 15, y: 17, w: 7, h: 6, col: '#b88255', hi: '#d4a373' }
       ];
 
       stones.forEach(s => {
         this.fillPixelRect(c, s.x, s.y, s.w, s.h, s.col);
         this.fillPixelRect(c, s.x + 1, s.y + 1, s.w - 2, 1, s.hi);
-        // Ambient crystal speck
-        this.setPixel(c, s.x + 2, s.y + 2, '#22d3ee');
+        this.setPixel(c, s.x + 2, s.y + 3, '#eed9b0');
+      });
+
+      this.cache.set(key, canvas);
+    }
+    return ctx.createPattern(this.cache.get(key)!, 'repeat')!;
+  }
+
+  // Town Square Flagstone Pattern for central plaza
+  public getFlagstonePattern(ctx: CanvasRenderingContext2D): CanvasPattern {
+    const key = 'pattern_town_square_plaza';
+    if (!this.cache.has(key)) {
+      const { canvas, ctx: c } = this.createCanvas(32, 32);
+      this.fillPixelRect(c, 0, 0, 32, 32, '#64748b'); // Slate seam
+
+      const tiles = [
+        { x: 1, y: 1, w: 14, h: 14, col: '#cbd5e1', hi: '#f1f5f9' },
+        { x: 17, y: 1, w: 14, h: 14, col: '#94a3b8', hi: '#e2e8f0' },
+        { x: 1, y: 17, w: 14, h: 14, col: '#94a3b8', hi: '#e2e8f0' },
+        { x: 17, y: 17, w: 14, h: 14, col: '#cbd5e1', hi: '#f1f5f9' }
+      ];
+
+      tiles.forEach(t => {
+        this.fillPixelRect(c, t.x, t.y, t.w, t.h, t.col);
+        this.fillPixelRect(c, t.x + 1, t.y + 1, t.w - 2, 1, t.hi);
       });
 
       this.cache.set(key, canvas);
@@ -123,7 +155,7 @@ export class PixelArtAssets {
   }
 
   // -------------------------------------------------------------
-  // 2. CHARACTER SPRITES (Hyper Light Drifter Adventurer Style)
+  // 2. CHARACTER SPRITES (Aryan - RPG Data Explorer Style)
   // -------------------------------------------------------------
 
   public drawPlayerSprite(
@@ -139,176 +171,178 @@ export class PixelArtAssets {
     ctx.translate(Math.floor(x), Math.floor(y));
     ctx.scale(scale, scale);
 
-    // Dynamic Campfire / Mana Glow beneath feet
-    ctx.fillStyle = 'rgba(217, 70, 239, 0.25)';
-    ctx.fillRect(-8, -2, 16, 4);
-    ctx.fillStyle = 'rgba(7, 9, 15, 0.6)';
-    ctx.fillRect(-6, -2, 12, 3);
+    // Natural pixel drop shadow beneath feet
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+    ctx.fillRect(-7, -2, 14, 4);
 
     const f = isMoving ? frame % 4 : 0;
     const legOffset = f === 1 ? -2 : f === 3 ? 2 : 0;
+    const armSwing = f === 1 ? 2 : f === 3 ? -2 : 0;
     const bob = (f === 1 || f === 3) ? 1 : 0;
 
-    // Hyper Light Drifter Palette:
-    const cSuitDark = '#0e1726';
-    const cSuitHighlight = '#1e293b';
-    const cCloakDark = '#86198f';       // Deep fuchsia / magenta
-    const cCloakMid = '#c026d3';        // Vibrant magenta
-    const cCloakLight = '#f43f5e';      // Glowing crimson edge
-    const cVisor = '#22d3ee';           // Glowing electric cyan visor
-    const cVisorGlow = '#67e8f9';
-    const cBoot = '#1e1b4b';
-    const cBackpack = '#3b0764';
-    const cSword = '#38bdf8';           // Energy sword on back
+    // Aryan's Color Palette (Matching Reference Screenshot)
+    const cHair = '#1c1917';        // Dark styled hair
+    const cHairHi = '#292524';
+    const cSkin = '#fde68a';        // Warm skin tone
+    const cSkinShade = '#fcd34d';
+    const cJacket = '#1e40af';      // Deep blue blazer/jacket
+    const cJacketTrim = '#1d4ed8';
+    const cShirt = '#f8fafc';       // White collared inner shirt
+    const cPants = '#334155';       // Charcoal grey trousers
+    const cBoots = '#0f172a';       // Dark boots
+    const cEyes = '#0f172a';
 
     if (direction === 'down') {
-      // 1. Cloak flowing behind
-      ctx.fillStyle = cCloakDark;
-      ctx.fillRect(-6, -16 + bob, 12, 12);
-      ctx.fillStyle = cCloakMid;
-      ctx.fillRect(-5, -15 + bob, 10, 11);
-      ctx.fillStyle = cCloakLight;
-      ctx.fillRect(-4, -13 + bob, 8, 2);
+      // 1. Legs / Trousers & Boots
+      ctx.fillStyle = cPants;
+      ctx.fillRect(-4, -6 + legOffset, 3, 5);
+      ctx.fillRect(1, -6 - legOffset, 3, 5);
+      ctx.fillStyle = cBoots;
+      ctx.fillRect(-5, -2 + legOffset, 4, 2);
+      ctx.fillRect(1, -2 - legOffset, 4, 2);
 
-      // 2. Legs / Boots
-      ctx.fillStyle = cBoot;
-      ctx.fillRect(-5, -6 + legOffset, 4, 6);
-      ctx.fillRect(1, -6 - legOffset, 4, 6);
+      // 2. Jacket & Shirt Body
+      ctx.fillStyle = cJacket;
+      ctx.fillRect(-5, -15 + bob, 10, 9);
+      // White inner shirt V-neck
+      ctx.fillStyle = cShirt;
+      ctx.fillRect(-1, -15 + bob, 2, 6);
+      ctx.fillStyle = cJacketTrim;
+      ctx.fillRect(-5, -15 + bob, 2, 9);
+      ctx.fillRect(3, -15 + bob, 2, 9);
 
-      // 3. Body / Tunic
-      ctx.fillStyle = cSuitDark;
-      ctx.fillRect(-5, -16 + bob, 10, 10);
-      ctx.fillStyle = cSuitHighlight;
-      ctx.fillRect(-4, -15 + bob, 4, 8);
+      // 3. Arms
+      ctx.fillStyle = cJacket;
+      ctx.fillRect(-7, -14 + bob - armSwing, 2, 6);
+      ctx.fillRect(5, -14 + bob + armSwing, 2, 6);
+      // Hands
+      ctx.fillStyle = cSkin;
+      ctx.fillRect(-7, -8 + bob - armSwing, 2, 2);
+      ctx.fillRect(5, -8 + bob + armSwing, 2, 2);
 
-      // Energy core / belt
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-5, -9 + bob, 10, 2);
-      ctx.fillStyle = cVisor;
-      ctx.fillRect(-1, -9 + bob, 2, 2);
+      // 4. Head & Face
+      ctx.fillStyle = cSkin;
+      ctx.fillRect(-4, -22 + bob, 8, 7);
+      // Eyes
+      ctx.fillStyle = cEyes;
+      ctx.fillRect(-3, -19 + bob, 2, 2);
+      ctx.fillRect(1, -19 + bob, 2, 2);
+      // Confident smile
+      ctx.fillStyle = '#b45309';
+      ctx.fillRect(-1, -16 + bob, 2, 1);
 
-      // 4. Scarf knot
-      ctx.fillStyle = cCloakLight;
-      ctx.fillRect(-3, -17 + bob, 6, 3);
-      ctx.fillRect(-2, -14 + bob, 4, 3);
-
-      // 5. Head / Drifter Helmet & Cyan Visor
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-4, -22 + bob, 8, 6);
-      // Glowing Cyan Visor Line
-      ctx.fillStyle = cVisor;
-      ctx.fillRect(-3, -20 + bob, 6, 2);
-      ctx.fillStyle = cVisorGlow;
-      ctx.fillRect(-2, -20 + bob, 4, 1);
-
-      // Drifter Hood / Crest
-      ctx.fillStyle = cCloakDark;
+      // 5. Styled Dark Hair (Side-parted with volume)
+      ctx.fillStyle = cHair;
       ctx.fillRect(-5, -25 + bob, 10, 4);
       ctx.fillRect(-5, -22 + bob, 2, 4);
-      ctx.fillRect(3, -22 + bob, 2, 4);
+      ctx.fillRect(3, -22 + bob, 2, 3);
+      ctx.fillStyle = cHairHi;
+      ctx.fillRect(-3, -24 + bob, 6, 2);
     } else if (direction === 'up') {
-      // 1. Flowing Cloak
-      ctx.fillStyle = cCloakDark;
-      ctx.fillRect(-6, -16 + bob, 12, 13);
-      ctx.fillStyle = cCloakMid;
-      ctx.fillRect(-5, -15 + bob, 10, 11);
+      // 1. Legs
+      ctx.fillStyle = cPants;
+      ctx.fillRect(-4, -6 + legOffset, 3, 5);
+      ctx.fillRect(1, -6 - legOffset, 3, 5);
+      ctx.fillStyle = cBoots;
+      ctx.fillRect(-5, -2 + legOffset, 4, 2);
+      ctx.fillRect(1, -2 - legOffset, 4, 2);
 
-      // 2. Legs
-      ctx.fillStyle = cBoot;
-      ctx.fillRect(-5, -6 + legOffset, 4, 6);
-      ctx.fillRect(1, -6 - legOffset, 4, 6);
+      // 2. Jacket from behind
+      ctx.fillStyle = cJacket;
+      ctx.fillRect(-5, -15 + bob, 10, 9);
+      ctx.fillStyle = cJacketTrim;
+      ctx.fillRect(-4, -14 + bob, 8, 2);
 
-      // 3. Energy Sword strapped on back (Glowing Cyan blade!)
-      ctx.fillStyle = cSword;
-      ctx.fillRect(3, -22 + bob, 2, 16);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(3, -18 + bob, 1, 10);
-      // Backpack module
-      ctx.fillStyle = cBackpack;
-      ctx.fillRect(-5, -16 + bob, 7, 8);
+      // 3. Arms
+      ctx.fillStyle = cJacket;
+      ctx.fillRect(-7, -14 + bob - armSwing, 2, 6);
+      ctx.fillRect(5, -14 + bob + armSwing, 2, 6);
 
-      // 4. Hood from behind
-      ctx.fillStyle = cCloakDark;
-      ctx.fillRect(-5, -25 + bob, 10, 8);
-      ctx.fillRect(-4, -18 + bob, 8, 2);
+      // 4. Hair from behind
+      ctx.fillStyle = cHair;
+      ctx.fillRect(-5, -25 + bob, 10, 9);
+      ctx.fillStyle = cHairHi;
+      ctx.fillRect(-4, -24 + bob, 8, 3);
     } else if (direction === 'right') {
-      // 1. Trailing Magenta Cape (flutters in wind)
-      const flutter = isMoving ? (f % 2 === 0 ? 2 : -2) : 0;
-      ctx.fillStyle = cCloakDark;
-      ctx.fillRect(-11, -17 + bob + flutter, 6, 5);
-      ctx.fillStyle = cCloakMid;
-      ctx.fillRect(-9, -16 + bob + flutter, 5, 4);
-      ctx.fillStyle = cCloakLight;
-      ctx.fillRect(-7, -15 + bob + flutter, 2, 2);
+      // 1. Legs
+      ctx.fillStyle = cPants;
+      ctx.fillRect(-3 + legOffset, -6, 3, 5);
+      ctx.fillRect(0 - legOffset, -6, 3, 5);
+      ctx.fillStyle = cBoots;
+      ctx.fillRect(-3 + legOffset, -2, 4, 2);
+      ctx.fillRect(0 - legOffset, -2, 4, 2);
 
-      // 2. Legs
-      ctx.fillStyle = cBoot;
-      ctx.fillRect(-4 + legOffset, -6, 4, 6);
-      ctx.fillRect(0 - legOffset, -6, 4, 6);
+      // 2. Body
+      ctx.fillStyle = cJacket;
+      ctx.fillRect(-3, -15 + bob, 7, 9);
+      ctx.fillStyle = cShirt;
+      ctx.fillRect(2, -14 + bob, 2, 4);
 
-      // 3. Body & Sword
-      ctx.fillStyle = cSuitDark;
-      ctx.fillRect(-3, -16 + bob, 7, 10);
-      ctx.fillStyle = cSword;
-      ctx.fillRect(-5, -20 + bob, 2, 14);
+      // 3. Arm swinging
+      ctx.fillStyle = cJacket;
+      ctx.fillRect(-1 + armSwing, -14 + bob, 3, 6);
+      ctx.fillStyle = cSkin;
+      ctx.fillRect(-1 + armSwing, -8 + bob, 2, 2);
 
-      // 4. Profile Head & Cyan Visor
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-2, -22 + bob, 6, 6);
-      ctx.fillStyle = cVisor;
-      ctx.fillRect(2, -20 + bob, 3, 2);
-      ctx.fillStyle = cVisorGlow;
-      ctx.fillRect(3, -20 + bob, 2, 1);
+      // 4. Face & Profile Hair
+      ctx.fillStyle = cSkin;
+      ctx.fillRect(-2, -22 + bob, 6, 7);
+      ctx.fillStyle = cEyes;
+      ctx.fillRect(2, -19 + bob, 2, 2);
 
-      ctx.fillStyle = cCloakDark;
-      ctx.fillRect(-4, -25 + bob, 8, 4);
-      ctx.fillRect(-4, -22 + bob, 3, 5);
+      ctx.fillStyle = cHair;
+      ctx.fillRect(-4, -25 + bob, 8, 5);
+      ctx.fillRect(-4, -20 + bob, 3, 3);
+      ctx.fillStyle = cHairHi;
+      ctx.fillRect(-2, -24 + bob, 5, 2);
     } else {
       // Facing Left
-      const flutter = isMoving ? (f % 2 === 0 ? 2 : -2) : 0;
-      ctx.fillStyle = cCloakDark;
-      ctx.fillRect(5, -17 + bob + flutter, 6, 5);
-      ctx.fillStyle = cCloakMid;
-      ctx.fillRect(4, -16 + bob + flutter, 5, 4);
-      ctx.fillStyle = cCloakLight;
-      ctx.fillRect(5, -15 + bob + flutter, 2, 2);
+      // 1. Legs
+      ctx.fillStyle = cPants;
+      ctx.fillRect(0 + legOffset, -6, 3, 5);
+      ctx.fillRect(-3 - legOffset, -6, 3, 5);
+      ctx.fillStyle = cBoots;
+      ctx.fillRect(-1 + legOffset, -2, 4, 2);
+      ctx.fillRect(-4 - legOffset, -2, 4, 2);
 
-      ctx.fillStyle = cBoot;
-      ctx.fillRect(0 + legOffset, -6, 4, 6);
-      ctx.fillRect(-4 - legOffset, -6, 4, 6);
+      // 2. Body
+      ctx.fillStyle = cJacket;
+      ctx.fillRect(-4, -15 + bob, 7, 9);
+      ctx.fillStyle = cShirt;
+      ctx.fillRect(-4, -14 + bob, 2, 4);
 
-      ctx.fillStyle = cSuitDark;
-      ctx.fillRect(-4, -16 + bob, 7, 10);
-      ctx.fillStyle = cSword;
-      ctx.fillRect(3, -20 + bob, 2, 14);
+      // 3. Arm swinging
+      ctx.fillStyle = cJacket;
+      ctx.fillRect(-2 - armSwing, -14 + bob, 3, 6);
+      ctx.fillStyle = cSkin;
+      ctx.fillRect(-2 - armSwing, -8 + bob, 2, 2);
 
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-4, -22 + bob, 6, 6);
-      ctx.fillStyle = cVisor;
-      ctx.fillRect(-5, -20 + bob, 3, 2);
-      ctx.fillStyle = cVisorGlow;
-      ctx.fillRect(-5, -20 + bob, 2, 1);
+      // 4. Face & Profile Hair
+      ctx.fillStyle = cSkin;
+      ctx.fillRect(-4, -22 + bob, 6, 7);
+      ctx.fillStyle = cEyes;
+      ctx.fillRect(-4, -19 + bob, 2, 2);
 
-      ctx.fillStyle = cCloakDark;
-      ctx.fillRect(-4, -25 + bob, 8, 4);
-      ctx.fillRect(1, -22 + bob, 3, 5);
+      ctx.fillStyle = cHair;
+      ctx.fillRect(-4, -25 + bob, 8, 5);
+      ctx.fillRect(1, -20 + bob, 3, 3);
+      ctx.fillStyle = cHairHi;
+      ctx.fillRect(-3, -24 + bob, 5, 2);
     }
 
-    // 6. Hyper Light Drifter Hovering Companion Drone / Mana Spirit
-    const droneSide = (direction === 'left') ? 8 : -8;
+    // 6. Cipher the AI Companion (Floating Drone / Wisp Companion beside shoulder)
+    const droneSide = (direction === 'left') ? 9 : -9;
     const droneBob = Math.sin(frame * 0.8 + 1.2) * 2;
     const dx = droneSide;
-    const dy = -20 + droneBob;
+    const dy = -22 + droneBob;
 
-    // Glowing aura
+    // Friendly Cyan Pixel Companion (Matching screenshot top-right)
     ctx.fillStyle = 'rgba(34, 211, 238, 0.35)';
+    ctx.fillRect(dx - 3, dy - 3, 7, 7);
+    ctx.fillStyle = '#0f172a';
     ctx.fillRect(dx - 2, dy - 2, 5, 5);
-    // Cyan Diamond Drone Core
     ctx.fillStyle = '#22d3ee';
     ctx.fillRect(dx - 1, dy - 1, 3, 3);
-    ctx.fillRect(dx, dy - 2, 1, 5);
-    ctx.fillRect(dx - 2, dy, 5, 1);
-    // Brilliant White Center Eye
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(dx, dy, 1, 1);
 
@@ -460,39 +494,75 @@ export class PixelArtAssets {
     ctx.restore();
   }
 
-  // Mochi the Cat (pure white with glowing cyan tail tip)
+  // Mango the Orange Tabby Cat (Warm ginger coat, tabby stripes, cream chest & swishing tail)
   public drawCatSprite(ctx: CanvasRenderingContext2D, x: number, y: number, animTime: number) {
-    const scale = 2.2;
+    const scale = 2.4;
     ctx.save();
     ctx.translate(Math.floor(x), Math.floor(y));
     ctx.scale(scale, scale);
 
-    ctx.fillStyle = 'rgba(7, 9, 15, 0.4)';
-    ctx.fillRect(-5, -1, 11, 2);
+    // Natural pixel drop shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+    ctx.fillRect(-6, -1, 13, 2);
 
     const frame = Math.floor(animTime * 3) % 4;
     const leg = frame % 2 === 0 ? 1 : 0;
 
-    ctx.fillStyle = '#fdf4ff';
+    // Ginger Orange Body
+    ctx.fillStyle = '#ea580c'; // Warm rich ginger
     ctx.fillRect(-5, -7, 10, 5);
+    // Darker Tabby Stripes across back
+    ctx.fillStyle = '#9a3412';
+    ctx.fillRect(-3, -7, 1, 4);
+    ctx.fillRect(0, -7, 1, 4);
+    ctx.fillRect(3, -7, 1, 4);
 
-    ctx.fillStyle = '#e879f9';
+    // Soft Cream Belly / Chest
+    ctx.fillStyle = '#ffedd5';
+    ctx.fillRect(-2, -4, 6, 2);
+
+    // Paws & Legs (with walking offset)
+    ctx.fillStyle = '#ea580c';
     ctx.fillRect(-4 + leg, -2, 2, 2);
     ctx.fillRect(2 - leg, -2, 2, 2);
+    // White socks on paws
+    ctx.fillStyle = '#ffedd5';
+    ctx.fillRect(-4 + leg, -1, 2, 1);
+    ctx.fillRect(2 - leg, -1, 2, 1);
 
-    ctx.fillStyle = '#fdf4ff';
-    ctx.fillRect(3, -10, 5, 5);
+    // Head
+    ctx.fillStyle = '#f97316';
+    ctx.fillRect(3, -11, 6, 6);
+    // Cream Muzzle
+    ctx.fillStyle = '#ffedd5';
+    ctx.fillRect(6, -8, 3, 3);
+    // Pink nose
     ctx.fillStyle = '#f43f5e';
-    ctx.fillRect(4, -12, 1, 2);
-    ctx.fillRect(6, -12, 1, 2);
-    ctx.fillStyle = '#22d3ee'; // luminous cyan eyes
-    ctx.fillRect(6, -8, 1, 1);
+    ctx.fillRect(8, -8, 1, 1);
 
-    const tailY = Math.sin(animTime * 4) * 2;
-    ctx.fillStyle = '#fdf4ff';
+    // Pointed Ears with Pink interior
+    ctx.fillStyle = '#ea580c';
+    ctx.fillRect(4, -13, 2, 2);
+    ctx.fillRect(7, -13, 2, 2);
+    ctx.fillStyle = '#fda4af';
+    ctx.fillRect(4, -12, 1, 1);
+    ctx.fillRect(7, -12, 1, 1);
+
+    // Lively Emerald/Amber Eyes
+    ctx.fillStyle = '#10b981';
+    ctx.fillRect(6, -9, 1.5, 1.5);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(6.5, -9, 0.5, 1.5);
+
+    // Swishing Orange Tabby Tail
+    const tailY = Math.sin(animTime * 5) * 2;
+    ctx.fillStyle = '#ea580c';
     ctx.fillRect(-7, -8 + tailY, 2, 2);
-    ctx.fillStyle = '#22d3ee'; // glowing cyan tail tip
-    ctx.fillRect(-8, -10 + tailY, 2, 3);
+    ctx.fillStyle = '#9a3412';
+    ctx.fillRect(-8, -9 + tailY, 2, 2);
+    // Cream tail tip
+    ctx.fillStyle = '#ffedd5';
+    ctx.fillRect(-9, -11 + tailY, 2, 3);
 
     ctx.restore();
   }

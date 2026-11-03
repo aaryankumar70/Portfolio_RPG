@@ -5,17 +5,17 @@ import { collisionSystem } from './CollisionSystem';
 
 export class PlayerCharacter {
   public state: PlayerState = {
-    x: 1360,
-    y: 1240, // Centered in the Central Plaza
-    direction: 'up',
+    x: 1200,
+    y: 890, // Centered right above the Town Square fountain, matching reference screenshot!
+    direction: 'down',
     animState: 'idle',
     isMoving: false,
     speed: 180, // pixels per second (delta-time based!)
-    level: 12,
-    xp: 3240,
+    level: 18,
+    xp: 1280,
     maxHp: 100,
     hp: 100,
-    name: 'TheDevNomad',
+    name: 'Aryan',
     path: []
   };
 
