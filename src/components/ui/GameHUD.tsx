@@ -175,16 +175,13 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       <div className="absolute top-16 left-4 pointer-events-auto w-64 sm:w-72 bg-[#0c141f]/95 border-2 border-[#22354c] shadow-[0_8px_30px_rgba(0,0,0,0.85)] p-4 rounded-sm">
         {/* Profile Header Row */}
         <div className="flex items-center gap-3 mb-3">
-          {/* Avatar Box */}
+          {/* Avatar Box with Production Pixel Art Portrait */}
           <div className="w-12 h-12 bg-[#16222f] border-2 border-[#38bdf8] flex items-center justify-center shrink-0 shadow-inner relative overflow-hidden">
-            <div className="w-8 h-8 relative">
-              <div className="absolute top-0 left-1 w-6 h-3 bg-[#0f172a]" />
-              <div className="absolute top-2.5 left-1.5 w-5 h-3 bg-[#fed7aa]" />
-              <div className="absolute top-3.5 left-2 w-1 h-1 bg-[#0284c7]" />
-              <div className="absolute top-3.5 right-2 w-1 h-1 bg-[#0284c7]" />
-              <div className="absolute top-5 left-1 w-6 h-3 bg-[#2563eb]" />
-              <div className="absolute top-5 left-3 w-2 h-3 bg-white" />
-            </div>
+            <img
+              src="/assets/ui/portrait_aryan.png"
+              alt="Aryan"
+              className="w-10 h-10 object-contain [image-rendering:pixelated]"
+            />
             <div className="absolute top-0.5 right-0.5 w-2 h-2 bg-[#38bdf8] rounded-full animate-ping opacity-60" />
           </div>
 
@@ -286,19 +283,29 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       </div>
 
       {/* ============================================================== */}
-      {/* 3. TOP-RIGHT COMPANION CARD (Exact Match to Screenshot)        */}
+      {/* 3. TOP-RIGHT WIZARD GUIDE CARD (Replaces AI Companion)         */}
       {/* ============================================================== */}
-      <div className="absolute top-16 right-4 pointer-events-auto w-56 sm:w-64 bg-[#0c141f]/95 border-2 border-[#22354c] shadow-[0_8px_30px_rgba(0,0,0,0.85)] p-3 rounded-sm">
-        <span className="text-[8px] text-slate-400 tracking-wider uppercase block mb-2">
-          Companion
-        </span>
+      <div className="absolute top-16 right-4 pointer-events-auto w-56 sm:w-64 bg-[#0c141f]/95 border-2 border-[#a855f7] shadow-[0_8px_30px_rgba(0,0,0,0.85),0_0_15px_rgba(168,85,247,0.25)] p-3 rounded-sm">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[8px] text-[#c084fc] tracking-wider uppercase font-bold flex items-center gap-1">
+            <span>✨</span>
+            <span>Wizard Guide</span>
+          </span>
+          <span className="text-[7px] px-1 py-0.5 bg-[#581c87] text-[#e9d5ff] rounded-xs border border-[#9333ea]">
+            Lorekeeper
+          </span>
+        </div>
 
         <div className="flex items-start gap-2.5 mb-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#0284c7] border border-[#38bdf8] flex items-center justify-center shrink-0 shadow-[0_0_8px_rgba(56,189,248,0.5)]">
-            <Bot className="w-4 h-4 text-white animate-pulse" />
+          <div className="w-9 h-9 rounded-full bg-[#3b0764] border-2 border-[#a855f7] flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(168,85,247,0.5)] overflow-hidden">
+            <img
+              src="/assets/ui/portrait_data_sage.png"
+              alt="Grand Wizard Eldrin"
+              className="w-full h-full object-cover [image-rendering:pixelated]"
+            />
           </div>
           <p className="text-[9px] text-slate-200 font-sans leading-tight">
-            I'm your AI companion. Ask me anything!
+            I am Grand Wizard Eldrin. Ask of Aryan's arcane spells & quests!
           </p>
         </div>
 
@@ -307,9 +314,10 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             soundManager.playClick();
             onOpenCompanion();
           }}
-          className="w-full py-1.5 bg-[#16273b] hover:bg-[#203750] text-[#38bdf8] border border-[#0284c7] text-[8px] flex items-center justify-center gap-1.5 cursor-pointer transition-colors active:translate-y-0.5"
+          className="w-full py-1.5 bg-[#2e1065] hover:bg-[#3b0764] text-[#e9d5ff] hover:text-white border border-[#a855f7] text-[8px] flex items-center justify-center gap-1.5 cursor-pointer transition-colors active:translate-y-0.5 shadow-sm"
         >
-          <span>Chat</span>
+          <span>🔮</span>
+          <span>Consult Wizard</span>
         </button>
       </div>
 

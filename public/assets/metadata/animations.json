@@ -1,0 +1,400 @@
+{
+  "characters": {
+    "aryan": {
+      "spritesheet": "characters/aryan/aryan_spritesheet.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 10,
+      "animations": {
+        "idle_down": {
+          "row": 0,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 220,
+          "loop": true
+        },
+        "idle_left": {
+          "row": 1,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 220,
+          "loop": true
+        },
+        "idle_right": {
+          "row": 2,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 220,
+          "loop": true
+        },
+        "idle_up": {
+          "row": 3,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 220,
+          "loop": true
+        },
+        "walk_down": {
+          "row": 4,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 140,
+          "loop": true
+        },
+        "walk_left": {
+          "row": 5,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 140,
+          "loop": true
+        },
+        "walk_right": {
+          "row": 6,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 140,
+          "loop": true
+        },
+        "walk_up": {
+          "row": 7,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 140,
+          "loop": true
+        },
+        "interact": {
+          "row": 8,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 180,
+          "loop": false
+        },
+        "celebrate": {
+          "row": 9,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 150,
+          "loop": true
+        }
+      }
+    },
+    "mango": {
+      "spritesheet": "characters/mango/mango_spritesheet.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 4,
+      "rows": 6,
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 200,
+          "loop": true
+        },
+        "walk": {
+          "row": 1,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 130,
+          "loop": true
+        },
+        "sit": {
+          "row": 2,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 250,
+          "loop": false
+        },
+        "sleep": {
+          "row": 3,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 350,
+          "loop": true
+        },
+        "stretch": {
+          "row": 4,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 200,
+          "loop": false
+        },
+        "follow": {
+          "row": 5,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 120,
+          "loop": true
+        }
+      }
+    }
+  },
+  "npcs": {
+    "barista": {
+      "spritesheet": "npcs/barista_idle.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 1,
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 240,
+          "loop": true
+        }
+      }
+    },
+    "gardener": {
+      "spritesheet": "npcs/gardener_idle.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 1,
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 240,
+          "loop": true
+        }
+      }
+    },
+    "guild_master": {
+      "spritesheet": "npcs/guild_master_idle.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 1,
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 240,
+          "loop": true
+        }
+      }
+    },
+    "blacksmith": {
+      "spritesheet": "npcs/blacksmith_idle.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 1,
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 240,
+          "loop": true
+        }
+      }
+    },
+    "librarian": {
+      "spritesheet": "npcs/librarian_idle.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 1,
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 240,
+          "loop": true
+        }
+      }
+    },
+    "historian": {
+      "spritesheet": "npcs/historian_idle.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 1,
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 240,
+          "loop": true
+        }
+      }
+    },
+    "researcher": {
+      "spritesheet": "npcs/researcher_idle.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 1,
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 240,
+          "loop": true
+        }
+      }
+    },
+    "data_sage": {
+      "spritesheet": "npcs/data_sage_idle.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 1,
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 240,
+          "loop": true
+        }
+      }
+    },
+    "ai_companion": {
+      "spritesheet": "npcs/ai_companion_idle.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 1,
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 240,
+          "loop": true
+        }
+      }
+    },
+    "postmaster": {
+      "spritesheet": "npcs/postmaster_idle.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 1,
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "frameDurationMs": 240,
+          "loop": true
+        }
+      }
+    }
+  }
+}

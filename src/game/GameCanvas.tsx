@@ -5,6 +5,7 @@ import { PlayerCharacter } from './PlayerCharacter';
 import { ParticleSystem } from './particles';
 import { NPCManager } from './NPCManager';
 import { soundManager } from '../audio/SoundManager';
+import { MangoPet } from './MangoPet';
 
 interface GameCanvasProps {
   buildings: BuildingData[];
@@ -32,6 +33,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const rendererRef = useRef<WorldRenderer>(new WorldRenderer());
   const playerRef = useRef<PlayerCharacter>(new PlayerCharacter());
   const npcManagerRef = useRef<NPCManager>(new NPCManager(npcs));
+  const mangoPetRef = useRef<MangoPet>(new MangoPet(1238, 902));
   const particlesRef = useRef<ParticleSystem>(new ParticleSystem());
 
   const cameraRef = useRef<{ x: number; y: number }>({ x: 700, y: 550 });
@@ -90,6 +92,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         playerRef.current.state.x = customEvent.detail.x;
         playerRef.current.state.y = customEvent.detail.y;
         playerRef.current.state.path = [];
+        mangoPetRef.current.x = customEvent.detail.x + 35;
+        mangoPetRef.current.y = customEvent.detail.y + 12;
       }
     };
     window.addEventListener('teleport-player', handleTeleport);
@@ -113,6 +117,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     const worldTargetX = clickScreenX + cameraRef.current.x;
     const worldTargetY = clickScreenY + cameraRef.current.y;
+
+    // Direct Mango pet interaction check (Mango meows and stretches!)
+    const distToMango = Math.hypot(worldTargetX - mangoPetRef.current.x, worldTargetY - mangoPetRef.current.y);
+    if (distToMango < 40) {
+      mangoPetRef.current.meow();
+      return;
+    }
 
     // Direct door click check
     for (const b of buildings) {
@@ -155,6 +166,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       // 2. Update Autonomous NPC Simulation
       npcManager.update(dt, player.state.x, player.state.y);
+
+      // 2b. Update Mango Pet Companion (Delta-Time follow AI & animations)
+      mangoPetRef.current.update(dt, player.state.x, player.state.y, player.state.isMoving);
 
       // 3. Camera smoothing tracking player
       const targetCamX = player.state.x - canvas.width / 2;
@@ -201,9 +215,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
       if (closestNPC !== activeNearNPCRef.current) {
-        if (closestNPC && closestNPC.id === 'npc_cat') {
-          soundManager.playCatMeow();
-        }
         activeNearNPCRef.current = closestNPC;
         onNearNPCChange(closestNPC);
       }
@@ -215,8 +226,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       ctx.imageSmoothingEnabled = false;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Render Layered & Y-Sorted Town Scene (Player, NPCs, Trees, Buildings sorted by depth!)
-      renderer.render(ctx, camX, camY, timeOfDay, buildings, npcManager, player);
+      // Render Layered & Y-Sorted Town Scene (Player, NPCs, Mango, Trees, Buildings sorted by depth!)
+      renderer.render(ctx, camX, camY, timeOfDay, buildings, npcManager, player, mangoPetRef.current);
 
       // Foreground Particles
       particles.render(ctx, camX, camY);

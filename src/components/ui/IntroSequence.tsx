@@ -73,20 +73,11 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ onBegin, onFastTra
           <div className="flex items-center gap-4 mb-6 pb-4 border-b-2 border-[#1e2c3e]">
             {/* Pixel Character Avatar Frame */}
             <div className="w-16 h-16 shrink-0 bg-[#16222f] border-2 border-[#f59e0b] flex items-center justify-center relative overflow-hidden shadow-inner">
-              {/* Handcrafted pixel avatar representing Aryan */}
-              <div className="w-10 h-10 relative">
-                {/* Dark styled hair */}
-                <div className="absolute top-0 left-2 w-6 h-3 bg-[#1e293b]" />
-                <div className="absolute top-1 left-1 w-8 h-2 bg-[#0f172a]" />
-                {/* Face */}
-                <div className="absolute top-3 left-2 w-6 h-4 bg-[#fed7aa]" />
-                {/* Eyes */}
-                <div className="absolute top-4 left-3 w-1.5 h-1.5 bg-[#0284c7]" />
-                <div className="absolute top-4 right-3 w-1.5 h-1.5 bg-[#0284c7]" />
-                {/* Blue blazer & white shirt */}
-                <div className="absolute bottom-0 left-1 w-8 h-3 bg-[#2563eb]" />
-                <div className="absolute bottom-0 left-4 w-2 h-3 bg-[#ffffff]" />
-              </div>
+              <img
+                src="/assets/ui/portrait_aryan.png"
+                alt="Aryan"
+                className="w-12 h-12 object-contain [image-rendering:pixelated]"
+              />
               {/* Floating Companion wisp */}
               <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#38bdf8] rounded-full animate-ping opacity-75" />
             </div>

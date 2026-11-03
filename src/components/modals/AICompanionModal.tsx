@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, Send, X, Sparkles, MessageSquare, Compass, Award, Code2 } from 'lucide-react';
+import { Send, X, Sparkles, Compass, Award, Code2, Wand2 } from 'lucide-react';
 import { soundManager } from '../../audio/SoundManager';
 import { ARYAN_STATS, MAJOR_PROJECTS, WEAPON_SKILLS } from '../../data/portfolioData';
 
@@ -23,23 +23,23 @@ export const AICompanionModal: React.FC<AICompanionModalProps> = ({
     {
       id: '1',
       sender: 'companion',
-      text: "Beep-boop! Hello traveler! I'm Cipher, Aryan's AI Companion. I know all about his journey, skills, projects, and the secrets of this town. What would you like to discover?",
+      text: "Greetings, noble traveler! I am Grand Wizard Eldrin, Guardian of Aryan's Chronicles and your mystical guide through this realm. Through the arcane weaves of Data Science and Machine Learning, I have chronicled his heroic journey, enchanted weapons, and academic trials. What wisdom from the archives do you seek?",
       quickActions: [
         {
-          label: '⚔ Skills & Weapons',
-          action: () => handleSendPrompt('What are Aryan\'s top technical skills?')
+          label: '⚔ Arcane Skills & Weapons',
+          action: () => handleSendPrompt('What are Aryan\'s top technical skills and spells?')
         },
         {
-          label: '📜 Major Projects',
-          action: () => handleSendPrompt('Tell me about Aryan\'s major projects.')
+          label: '📜 Legendary Quest Projects',
+          action: () => handleSendPrompt('Tell me about Aryan\'s legendary projects.')
         },
         {
-          label: '🎓 Education & Degree',
-          action: () => handleSendPrompt('What is Aryan\'s educational background?')
+          label: '🎓 Academic Sorcery & Degree',
+          action: () => handleSendPrompt('What is Aryan\'s academic background?')
         },
         {
-          label: '☕ Why Coffee Shop?',
-          action: () => handleSendPrompt('Tell me about the Coffee Shop.')
+          label: '☕ The Coffee Tavern Buff',
+          action: () => handleSendPrompt('Tell me about the Coffee Shop and buffs.')
         }
       ]
     }
@@ -50,70 +50,70 @@ export const AICompanionModal: React.FC<AICompanionModalProps> = ({
   const generateAnswer = (query: string): { reply: string; buildingToVisit?: string } => {
     const q = query.toLowerCase();
 
-    if (q.includes('skill') || q.includes('weapon') || q.includes('tech') || q.includes('stack')) {
+    if (q.includes('skill') || q.includes('weapon') || q.includes('tech') || q.includes('stack') || q.includes('spell')) {
       return {
-        reply: `Aryan's primary arsenal consists of:
-• Python Greatsword (92%): High-performance scripting, data wrangling, and backend APIs.
-• SQL War Hammer (88%): Complex window functions, relational database architecture, and query optimization.
-• Machine Learning Bow (86%): Neural network fine-tuning, transformers, and multimodal embeddings.
-• Power BI Shield (80%): Executive KPI dashboards and data storytelling.
-• Statistics Staff (85%): Probability modeling, hypothesis testing, and exploratory data analysis.
+        reply: `By the stars, Aryan wields a formidable arcane arsenal:
+• Python Greatsword (92%): Forged for rapid script enchantment, data manipulation, and high-concurrency microservices.
+• SQL War Hammer (88%): Capable of shattering relational crypts with window functions and sub-second query indexing.
+• Machine Learning Grimoire (86%): Conjuring multimodal embeddings, neural architectures, and transformer pipelines.
+• Power BI Aegis (80%): Illuminating executive dashboards with crystal-clear visual storytelling.
+• Statistical Staff (85%): Discerning mathematical truth through probability theory and exploratory hypotheses.
 
-Would you like me to take you to the Blacksmith to inspect his weapons?`,
+Shall I transport you to the Blacksmith so you may inspect his forged arsenal?`,
         buildingToVisit: 'blacksmith'
       };
     }
 
     if (q.includes('project') || q.includes('built') || q.includes('work') || q.includes('portfolio') || q.includes('mindpulse') || q.includes('lost')) {
       return {
-        reply: `Aryan has engineered several standout applications:
-1. MindPulse AI — An AI mental health & wellbeing companion utilizing multimodal sentiment and acoustic analysis.
-2. Lost & Found AI — Intelligent visual-text retrieval engine built on OpenAI CLIP and vector databases.
-3. Sales Analytics Engine — Predictive forecasting and real-time revenue analytics dashboard.
-4. CONNEXA — Peer networking and automated matchmaking system based on skill embeddings.
+        reply: `Aryan has channeled his arcane craft into several renowned artifacts:
+1. MindPulse AI — A multimodal diagnostic talisman detecting emotional distress from acoustic voice biomarkers and sentiment embeddings.
+2. Lost & Found AI — An all-seeing retrieval engine powered by OpenAI CLIP embeddings and vector search magic.
+3. Sales Forecasting Engine — An oracle dashboard predicting revenue trajectories with high statistical precision.
+4. CONNEXA — A guild networking tapestry matching collaborators through skill-based vector similarity.
 
-You can battle these creations in the Boss Arena or inspect Python code in the Python Cave!`,
+You may challenge these creations in the Boss Arena or examine their inner scripts at the Python Cave!`,
         buildingToVisit: 'boss_arena'
       };
     }
 
-    if (q.includes('education') || q.includes('degree') || q.includes('mca') || q.includes('college') || q.includes('university') || q.includes('bca')) {
+    if (q.includes('education') || q.includes('degree') || q.includes('mca') || q.includes('college') || q.includes('university') || q.includes('bca') || q.includes('academic')) {
       return {
-        reply: `Aryan is pursuing his Master of Computer Applications (MCA) in Data Science & Machine Learning, building upon his solid BCA foundation. He focuses heavily on deep learning systems, data engineering pipelines, and scalable software architecture. You can review his full credentials at the Library!`,
+        reply: `Aryan was schooled in the high collegiate halls, currently mastering his Master of Computer Applications (MCA) in Data Science & Artificial Intelligence, building upon his Bachelor of Computer Applications (BCA) foundation. His studies center on deep learning architectures, scalable big-data engineering, and algorithmic rigor. All his certified diplomas and scrolls are enshrined in the Library!`,
         buildingToVisit: 'library'
       };
     }
 
-    if (q.includes('coffee') || q.includes('break') || q.includes('barista')) {
+    if (q.includes('coffee') || q.includes('break') || q.includes('barista') || q.includes('buff')) {
       return {
-        reply: `Ah, the Coffee Shop! Aryan loves crafting code over a hot espresso. He currently has ${ARYAN_STATS.coffeeCups} coffee cups enjoyed, which grants him the 'Coffee Lover' buff (+5 Focus)! Visit the Coffee Shop to buy him a brew from Barista Marco!`,
+        reply: `Ah, the hearth of the Coffee Shop! Like many legendary sorcerers, Aryan channels intense cognitive focus through dark roasted brews. He has enjoyed ${ARYAN_STATS.coffeeCups} enchanted cups, granting him the 'Coffee Lover' buff (+5 Focus)! Visit Barista Marco at the tavern to sample a cup!`,
         buildingToVisit: 'coffee_shop'
       };
     }
 
     if (q.includes('contact') || q.includes('hire') || q.includes('email') || q.includes('resume') || q.includes('message')) {
       return {
-        reply: `Aryan is actively open to impactful Data Science, Machine Learning, and Software Engineering roles! You can send him a direct message or download his resume at the Contact Post Office, or connect via LinkedIn and GitHub.`,
+        reply: `Aryan is actively seeking impactful Data Science, Machine Learning, and Software Engineering quests! You may dispatch a raven, write a scroll at the Contact Post Office, or obtain his official parchment Resume.`,
         buildingToVisit: 'post_office'
       };
     }
 
     if (q.includes('python') || q.includes('cave')) {
       return {
-        reply: `The Python Cave is nestled in the northeast cliffside. The Cave Sage Aldous guards the secrets of Pythonic design patterns, automation scripts, and machine learning pipelines. Step inside to explore!`,
+        reply: `The Python Cave is nestled in the northeast cliffside. Cave Sage Aldous guards the glowing blue database crystals and automated pipelines. Venture forth to study the code scrolls!`,
         buildingToVisit: 'python_cave'
       };
     }
 
     if (q.includes('sql') || q.includes('database') || q.includes('mine')) {
       return {
-        reply: `The SQL Mines feature timber mine shafts and rail carts loaded with raw data crystals. Foreman Ironclad can guide you through query optimization and database schema engineering!`,
+        reply: `The SQL Mines plunge into the bedrock of relational data. Foreman Ironclad oversees the rail tracks and schema quarries. Step inside to witness high-throughput data pipelines!`,
         buildingToVisit: 'sql_mines'
       };
     }
 
     return {
-      reply: `Aryan is a dedicated Data Explorer and AI engineer who turns messy datasets into intelligent systems. Explore the town buildings—like the Guild Hall for quests, Blacksmith for skills, Boss Arena for major projects, or Your Home for personal stats! What would you like to see next?`
+      reply: `Aryan is a dedicated Data Explorer and Software Sorcerer who transforms unruly datasets into intelligent, beautiful realities. Seek out the Guild Hall for quests, the Blacksmith for armaments, or the Boss Arena for project battles. How may this humble Wizard assist your quest further?`
     };
   };
 
@@ -138,7 +138,7 @@ You can battle these creations in the Boss Arena or inspect Python code in the P
         quickActions: answer.buildingToVisit
           ? [
               {
-                label: `🚀 Fast Travel to ${answer.buildingToVisit.replace('_', ' ').toUpperCase()}`,
+                label: `🔮 Fast Travel to ${answer.buildingToVisit.replace('_', ' ').toUpperCase()}`,
                 action: () => {
                   onClose();
                   onNavigateBuilding(answer.buildingToVisit!);
@@ -158,27 +158,31 @@ You can battle these creations in the Boss Arena or inspect Python code in the P
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm select-none">
-      <div className="w-full max-w-2xl bg-[#0e1622] border-4 border-[#2b3d54] shadow-[0_16px_50px_rgba(0,0,0,0.85),inset_0_0_0_2px_#38bdf8] flex flex-col max-h-[85vh] font-pixel relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-sm select-none">
+      <div className="w-full max-w-2xl bg-[#0c0e18] border-4 border-[#7e22ce] shadow-[0_16px_60px_rgba(0,0,0,0.9),inset_0_0_0_2px_#c084fc] flex flex-col max-h-[85vh] font-pixel relative">
         {/* Decorative corner brackets */}
-        <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-[#38bdf8]" />
-        <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-[#38bdf8]" />
-        <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-[#38bdf8]" />
-        <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-[#38bdf8]" />
+        <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-[#f59e0b]" />
+        <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-[#f59e0b]" />
+        <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-[#f59e0b]" />
+        <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-[#f59e0b]" />
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 bg-[#142030] border-b-2 border-[#1e2e42]">
+        <div className="flex items-center justify-between px-5 py-4 bg-[#1b102b] border-b-2 border-[#581c87]">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-[#0284c7] border-2 border-[#38bdf8] flex items-center justify-center shadow-[0_0_12px_rgba(56,189,248,0.5)]">
-              <Bot className="w-5 h-5 text-white animate-pulse" />
+            <div className="w-10 h-10 rounded-full bg-[#3b0764] border-2 border-[#c084fc] flex items-center justify-center shadow-[0_0_14px_rgba(192,132,252,0.6)] overflow-hidden shrink-0">
+              <img
+                src="/assets/ui/portrait_data_sage.png"
+                alt="Grand Wizard Eldrin"
+                className="w-full h-full object-cover [image-rendering:pixelated]"
+              />
             </div>
             <div>
-              <h3 className="text-xs sm:text-sm text-[#38bdf8] tracking-wider flex items-center gap-2">
-                CIPHER · AI COMPANION
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <h3 className="text-xs sm:text-sm text-[#e9d5ff] tracking-wider flex items-center gap-2">
+                <span>GRAND WIZARD ELDRIN · WIZARD GUIDE</span>
+                <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
               </h3>
-              <p className="text-[8px] text-[#94a3b8] font-sans">
-                Real-time interactive guide to Aryan's journey and portfolio
+              <p className="text-[8px] text-[#c084fc] font-sans">
+                Master of Arcane Data Arts & Chronicler of Aryan's Journey
               </p>
             </div>
           </div>
@@ -188,7 +192,7 @@ You can battle these creations in the Boss Arena or inspect Python code in the P
               soundManager.playClick();
               onClose();
             }}
-            className="w-7 h-7 flex items-center justify-center bg-[#1e2e42] hover:bg-[#334760] text-slate-300 hover:text-white border border-[#38bdf8]/40 transition-colors"
+            className="w-7 h-7 flex items-center justify-center bg-[#2e1065] hover:bg-[#3b0764] text-slate-300 hover:text-white border border-[#a855f7] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -204,8 +208,12 @@ You can battle these creations in the Boss Arena or inspect Python code in the P
                 className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
               >
                 {!isUser && (
-                  <div className="w-7 h-7 rounded-full bg-[#0284c7] border border-[#38bdf8] flex items-center justify-center shrink-0 mt-1">
-                    <Bot className="w-3.5 h-3.5 text-white" />
+                  <div className="w-8 h-8 rounded-full bg-[#3b0764] border border-[#a855f7] flex items-center justify-center shrink-0 mt-1 overflow-hidden shadow-sm">
+                    <img
+                      src="/assets/ui/portrait_data_sage.png"
+                      alt="Wizard Eldrin"
+                      className="w-full h-full object-cover [image-rendering:pixelated]"
+                    />
                   </div>
                 )}
 
@@ -213,19 +221,19 @@ You can battle these creations in the Boss Arena or inspect Python code in the P
                   className={`max-w-[80%] p-3.5 leading-relaxed ${
                     isUser
                       ? 'bg-[#1e3a5f] text-white border border-[#0284c7] rounded-sm shadow-md'
-                      : 'bg-[#131d2b] text-[#cbd5e1] border border-[#23354a] rounded-sm shadow-md'
+                      : 'bg-[#150d24] text-[#e2e8f0] border border-[#4c1d95] rounded-sm shadow-md'
                   }`}
                 >
                   <p className="whitespace-pre-line text-xs">{m.text}</p>
 
                   {/* Quick Action buttons */}
                   {m.quickActions && m.quickActions.length > 0 && (
-                    <div className="mt-3 pt-2.5 border-t border-[#1e2e42] flex flex-wrap gap-2">
+                    <div className="mt-3 pt-2.5 border-t border-[#3b1263] flex flex-wrap gap-2">
                       {m.quickActions.map((qa, i) => (
                         <button
                           key={i}
                           onClick={qa.action}
-                          className="px-2.5 py-1 bg-[#1a293d] hover:bg-[#253a54] text-[#38bdf8] border border-[#0284c7]/50 text-[10px] font-pixel transition-colors flex items-center gap-1 active:translate-y-0.5"
+                          className="px-2.5 py-1 bg-[#25103d] hover:bg-[#3b1561] text-[#e9d5ff] border border-[#7e22ce] text-[10px] font-pixel transition-colors flex items-center gap-1 active:translate-y-0.5 cursor-pointer"
                         >
                           <span>{qa.label}</span>
                         </button>
@@ -235,7 +243,7 @@ You can battle these creations in the Boss Arena or inspect Python code in the P
                 </div>
 
                 {isUser && (
-                  <div className="w-7 h-7 rounded-full bg-[#f59e0b] border border-[#fef08a] flex items-center justify-center shrink-0 mt-1 text-[9px] font-pixel font-bold text-[#0f1722]">
+                  <div className="w-8 h-8 rounded-full bg-[#f59e0b] border border-[#fef08a] flex items-center justify-center shrink-0 mt-1 text-[9px] font-pixel font-bold text-[#0f1722]">
                     YOU
                   </div>
                 )}
@@ -247,20 +255,20 @@ You can battle these creations in the Boss Arena or inspect Python code in the P
         {/* Input Form */}
         <form
           onSubmit={handleSubmit}
-          className="p-3 sm:p-4 bg-[#142030] border-t-2 border-[#1e2e42] flex items-center gap-2"
+          className="p-3 sm:p-4 bg-[#1b102b] border-t-2 border-[#581c87] flex items-center gap-2"
         >
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask Cipher anything about Aryan, skills, or projects..."
-            className="flex-1 bg-[#0a111a] border border-[#2b3d54] focus:border-[#38bdf8] px-3 py-2 text-xs text-white placeholder-slate-500 outline-none font-sans"
+            placeholder="Ask Grand Wizard Eldrin about spells, technical projects, or quests..."
+            className="flex-1 bg-[#0a0714] border border-[#4c1d95] focus:border-[#c084fc] px-3 py-2 text-xs text-white placeholder-slate-400 outline-none font-sans"
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-[#0284c7] hover:bg-[#0369a1] text-white border border-[#38bdf8] text-[9px] font-pixel flex items-center gap-1.5 transition-colors cursor-pointer active:translate-y-0.5"
+            className="px-4 py-2 bg-[#7e22ce] hover:bg-[#6b21a8] text-[#fef08a] border border-[#c084fc] text-[9px] font-pixel flex items-center gap-1.5 transition-colors cursor-pointer active:translate-y-0.5"
           >
-            <span>SEND</span>
+            <span>CAST</span>
             <Send className="w-3.5 h-3.5" />
           </button>
         </form>

@@ -20,6 +20,7 @@ export class PlayerCharacter {
   };
 
   private walkAnimTimer = 0;
+  private idleAnimTimer = 0;
   private footstepTimer = 0;
   public isRunning = false;
   private ghostTrail: Array<{ x: number; y: number; dir: 'down' | 'up' | 'left' | 'right'; frame: number; alpha: number }> = [];
@@ -136,7 +137,7 @@ export class PlayerCharacter {
     } else {
       this.state.isMoving = false;
       this.state.animState = 'idle';
-      this.walkAnimTimer = 0;
+      this.idleAnimTimer += dt * 4.5; // ~220ms per idle frame (matching animations.json)
       this.footstepTimer = 0;
     }
 
@@ -171,7 +172,7 @@ export class PlayerCharacter {
     const px = Math.floor(this.state.x - cameraX);
     const py = Math.floor(this.state.y - cameraY);
 
-    const frame = Math.floor(this.walkAnimTimer);
+    const frame = Math.floor(this.state.isMoving ? this.walkAnimTimer : this.idleAnimTimer);
     pixelAssets.drawPlayerSprite(ctx, px, py, this.state.direction, frame, this.state.isMoving);
 
     // 3. Optional: Draw subtle path dot markers for click-to-move

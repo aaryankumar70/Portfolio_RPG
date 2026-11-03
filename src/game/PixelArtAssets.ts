@@ -1,6 +1,8 @@
 // PixelArtAssets.ts - Hyper Light Drifter & Vibrant Fantasy Pixel Art Engine
 // Generates crisp, authentic 16-bit / 32-bit pixel sprites and tilesets with vibrant cyan, magenta, lavender, and teal palettes.
 
+import { assetManager } from './AssetManager';
+
 export class PixelArtAssets {
   private cache: Map<string, HTMLCanvasElement> = new Map();
   private imageCache: Map<string, HTMLImageElement> = new Map();
@@ -50,6 +52,11 @@ export class PixelArtAssets {
 
   // Natural Green Grass Pattern (Matching Reference Screenshot)
   public getGrassPattern(ctx: CanvasRenderingContext2D): CanvasPattern {
+    const grassImg = assetManager.getImage('/assets/tilesets/grass_01.png');
+    if (grassImg) {
+      const pat = ctx.createPattern(grassImg, 'repeat');
+      if (pat) return pat;
+    }
     const key = 'pattern_natural_grass_rpg';
     if (!this.cache.has(key)) {
       const { canvas, ctx: c } = this.createCanvas(32, 32);
@@ -86,6 +93,11 @@ export class PixelArtAssets {
 
   // Cobblestone Road Pattern: Warm earthy stone road matching reference screenshot
   public getCobblePattern(ctx: CanvasRenderingContext2D): CanvasPattern {
+    const cobbleImg = assetManager.getImage('/assets/tilesets/cobblestone.png');
+    if (cobbleImg) {
+      const pat = ctx.createPattern(cobbleImg, 'repeat');
+      if (pat) return pat;
+    }
     const key = 'pattern_cobble_road_rpg';
     if (!this.cache.has(key)) {
       const { canvas, ctx: c } = this.createCanvas(24, 24);
@@ -166,6 +178,58 @@ export class PixelArtAssets {
     frame: number,
     isMoving: boolean
   ) {
+    const img = assetManager.getImage('/assets/characters/aryan/aryan_spritesheet.png');
+    if (img) {
+      // Row layout from animations.json:
+      // Row 0: idle_down, Row 1: idle_left, Row 2: idle_right, Row 3: idle_up
+      // Row 4: walk_down, Row 5: walk_left, Row 6: walk_right, Row 7: walk_up
+      let row = 0;
+      if (isMoving) {
+        if (direction === 'down') row = 4;
+        else if (direction === 'left') row = 5;
+        else if (direction === 'right') row = 6;
+        else if (direction === 'up') row = 7;
+      } else {
+        if (direction === 'down') row = 0;
+        else if (direction === 'left') row = 1;
+        else if (direction === 'right') row = 2;
+        else if (direction === 'up') row = 3;
+      }
+
+      const col = frame % 4;
+      const frameW = 32;
+      const frameH = 48;
+      const scale = 1.7;
+      const destW = frameW * scale;
+      const destH = frameH * scale;
+
+      ctx.save();
+      ctx.translate(Math.floor(x), Math.floor(y));
+      ctx.imageSmoothingEnabled = false;
+
+      // Soft ground drop shadow beneath feet
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+      ctx.beginPath();
+      ctx.ellipse(0, -2, destW * 0.32, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Render sprite frame anchored to ground
+      ctx.drawImage(
+        img,
+        col * frameW,
+        row * frameH,
+        frameW,
+        frameH,
+        Math.floor(-destW / 2),
+        Math.floor(-destH + 4),
+        Math.floor(destW),
+        Math.floor(destH)
+      );
+
+      ctx.restore();
+      return;
+    }
+
     const scale = 2.5;
     ctx.save();
     ctx.translate(Math.floor(x), Math.floor(y));
@@ -496,6 +560,38 @@ export class PixelArtAssets {
 
   // Mango the Orange Tabby Cat (Warm ginger coat, tabby stripes, cream chest & swishing tail)
   public drawCatSprite(ctx: CanvasRenderingContext2D, x: number, y: number, animTime: number) {
+    const img = assetManager.getImage('/assets/characters/mango/mango_spritesheet.png');
+    if (img) {
+      const frame = Math.floor(animTime * 4) % 4;
+      const frameW = 32;
+      const frameH = 32;
+      const scale = 1.6;
+      const destW = frameW * scale;
+      const destH = frameH * scale;
+
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(x, y - 2, destW * 0.32, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Row 0 is idle animation
+      ctx.drawImage(
+        img,
+        frame * frameW,
+        0,
+        frameW,
+        frameH,
+        Math.floor(x - destW / 2),
+        Math.floor(y - destH + 6),
+        destW,
+        destH
+      );
+      ctx.restore();
+      return;
+    }
+
     const scale = 2.4;
     ctx.save();
     ctx.translate(Math.floor(x), Math.floor(y));

@@ -588,8 +588,8 @@ export const NPCS: NPC[] = [
   },
   {
     id: 'npc_companion',
-    name: 'Cipher the AI Companion',
-    role: 'Quest Guide',
+    name: 'Grand Wizard Eldrin',
+    role: 'Wizard Guide',
     district: 'Town Center',
     x: 1200,
     y: 930,
@@ -599,34 +599,9 @@ export const NPCS: NPC[] = [
     scheduleIndex: 0,
     schedule: [{ x: 1200, y: 930, state: 'idle', duration: 10, facing: 'down' }],
     dialog: [
-      'Greetings! I am Cipher, Aryan’s AI Companion and Quest Master.',
-      'Click on me or the Companion widget in the top right to ask anything about Aryan!',
-      'Where shall our adventure take us first? The Python Cave or the Guild Hall?'
-    ],
-    currentDialogIndex: 0,
-    icon: 'Bot'
-  },
-  {
-    id: 'npc_cat',
-    name: 'Mango',
-    role: 'Town Tabby Cat',
-    district: 'Town Square',
-    x: 1250,
-    y: 910,
-    direction: 'left',
-    state: 'idle',
-    stateTimer: 0,
-    scheduleIndex: 0,
-    schedule: [
-      { x: 1250, y: 910, state: 'idle', duration: 8, facing: 'left' },
-      { x: 1270, y: 940, state: 'walking', duration: 4, facing: 'down' },
-      { x: 1240, y: 950, state: 'idle', duration: 7, facing: 'up' },
-      { x: 1220, y: 915, state: 'walking', duration: 4, facing: 'right' }
-    ],
-    dialog: [
-      'Meow! (Mango rubs gently against your boots, purring contentedly)',
-      'Purrrr... Mango loves basking in the sunny cobblestones by the Town Square fountain.',
-      'Mew! (Mango looks toward the Coffee Shop, dreaming of a warm hearth)'
+      'Greetings, noble traveler! I am Grand Wizard Eldrin, guardian of Aryan’s lore and your mystical guide through this realm.',
+      'By the arcane sciences of Machine Learning and Data Sorcery, I can illuminate any question you harbor about Aryan’s career and spells.',
+      'Speak with me anytime, or consult the Wizard Guide orb at the top-right of your screen to seek ancient wisdom!'
     ],
     currentDialogIndex: 0,
     icon: 'Sparkles'

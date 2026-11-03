@@ -2,6 +2,8 @@ import { BuildingData, TimeOfDay, NPC, DepthObject } from '../types';
 import { pixelAssets } from './PixelArtAssets';
 import { PlayerCharacter } from './PlayerCharacter';
 import { NPCManager } from './NPCManager';
+import { MangoPet } from './MangoPet';
+import { assetManager } from './AssetManager';
 
 interface Bird {
   x: number;
@@ -19,6 +21,21 @@ export class WorldRenderer {
     { x: 450, y: 220, speed: 2.2 }
   ];
 
+  public static readonly BUILDING_SPRITE_MAP: Record<string, string> = {
+    coffee_shop: '/assets/buildings/coffee_shop.png',
+    guild_hall: '/assets/buildings/guild_hall.png',
+    python_cave: '/assets/buildings/python_cave.png',
+    garden: '/assets/buildings/garden.png',
+    sql_mines: '/assets/buildings/sql_mines.png',
+    blacksmith: '/assets/buildings/blacksmith.png',
+    library: '/assets/buildings/library.png',
+    home: '/assets/buildings/home.png',
+    analytics_tower: '/assets/buildings/analytics_tower.png',
+    ml_lab: '/assets/buildings/ml_laboratory.png',
+    boss_arena: '/assets/buildings/boss_arena.png',
+    post_office: '/assets/buildings/post_office.png'
+  };
+
   public render(
     ctx: CanvasRenderingContext2D,
     cameraX: number,
@@ -26,7 +43,8 @@ export class WorldRenderer {
     timeOfDay: TimeOfDay,
     buildings: BuildingData[],
     npcManager: NPCManager,
-    player: PlayerCharacter
+    player: PlayerCharacter,
+    mangoPet?: MangoPet
   ) {
     this.animTimer += 0.035;
 
@@ -45,8 +63,8 @@ export class WorldRenderer {
     // 5. Birds in the Sky
     this.drawBirds(ctx, cameraX, cameraY);
 
-    // 6. Y-Sorted Entities (Buildings, Fountain, NPCs, Player, Foliage)
-    this.drawYSortedEntities(ctx, cameraX, cameraY, timeOfDay, buildings, npcManager, player);
+    // 6. Y-Sorted Entities (Buildings, Fountain, NPCs, Mango, Player, Foliage)
+    this.drawYSortedEntities(ctx, cameraX, cameraY, timeOfDay, buildings, npcManager, player, mangoPet);
   }
 
   // 1. Natural Green Grass Meadow Terrain
@@ -147,8 +165,15 @@ export class WorldRenderer {
     ctx.save();
     const riverStartX = 2520 - cameraX;
 
-    // River Water (Sparkling Blue)
-    ctx.fillStyle = '#2563eb';
+    // River Water (Animated Pixel Water Tile or Sparkling Blue)
+    const waterFrame = (Math.floor(this.animTimer * 3) % 3) + 1;
+    const waterImg = assetManager.getImage(`/assets/tilesets/water_0${waterFrame}.png`);
+    if (waterImg) {
+      const pat = ctx.createPattern(waterImg, 'repeat');
+      ctx.fillStyle = pat ? pat : '#2563eb';
+    } else {
+      ctx.fillStyle = '#2563eb';
+    }
     ctx.beginPath();
     ctx.moveTo(riverStartX, 0);
     ctx.bezierCurveTo(riverStartX - 50, 600, riverStartX + 60, 1200, riverStartX - 30, 2200);
@@ -224,7 +249,7 @@ export class WorldRenderer {
     });
   }
 
-  // 6. Y-SORTED DEPTH RENDERING (Buildings, Fountain, NPCs, Player)
+  // 6. Y-SORTED DEPTH RENDERING (Buildings, Fountain, NPCs, Mango, Player, Props, Trees)
   private drawYSortedEntities(
     ctx: CanvasRenderingContext2D,
     cameraX: number,
@@ -232,11 +257,12 @@ export class WorldRenderer {
     timeOfDay: TimeOfDay,
     buildings: BuildingData[],
     npcManager: NPCManager,
-    player: PlayerCharacter
+    player: PlayerCharacter,
+    mangoPet?: MangoPet
   ) {
     const depthList: DepthObject[] = [];
 
-    // 1. Buildings
+    // 1. Buildings (Production Assets with Procedural Fallbacks)
     buildings.forEach((b) => {
       const bx = Math.floor(b.x - cameraX);
       const by = Math.floor(b.y - cameraY);
@@ -246,38 +272,58 @@ export class WorldRenderer {
         y: baseY,
         render: (c) => {
           c.save();
-          // Drop shadow
-          c.fillStyle = 'rgba(15, 23, 42, 0.4)';
-          c.fillRect(bx - 6, by + b.height - 8, b.width + 12, 16);
+          const spritePath = WorldRenderer.BUILDING_SPRITE_MAP[b.id];
+          const img = spritePath ? assetManager.getImage(spritePath) : null;
 
-          if (b.id === 'coffee_shop') {
-            this.drawCoffeeShop(c, bx, by, b.width, b.height);
-          } else if (b.id === 'guild_hall') {
-            this.drawGuildHall(c, bx, by, b.width, b.height);
-          } else if (b.id === 'python_cave') {
-            this.drawPythonCave(c, bx, by, b.width, b.height);
-          } else if (b.id === 'garden') {
-            this.drawGarden(c, bx, by, b.width, b.height);
-          } else if (b.id === 'sql_mines') {
-            this.drawSqlMines(c, bx, by, b.width, b.height);
-          } else if (b.id === 'blacksmith') {
-            this.drawBlacksmith(c, bx, by, b.width, b.height);
-          } else if (b.id === 'library') {
-            this.drawLibrary(c, bx, by, b.width, b.height);
-          } else if (b.id === 'home') {
-            this.drawHome(c, bx, by, b.width, b.height);
-          } else if (b.id === 'analytics_tower') {
-            this.drawAnalyticsTower(c, bx, by, b.width, b.height);
-          } else if (b.id === 'ml_lab') {
-            this.drawMLLab(c, bx, by, b.width, b.height);
-          } else if (b.id === 'boss_arena') {
-            this.drawBossArena(c, bx, by, b.width, b.height);
+          if (img) {
+            const scale = b.id === 'analytics_tower' ? 2.0 : 2.2;
+            const destW = Math.floor(img.naturalWidth * scale);
+            const destH = Math.floor(img.naturalHeight * scale);
+            const destX = Math.floor(bx + (b.width - destW) / 2);
+            const destY = Math.floor(by + b.height - destH);
+
+            // Ground contact shadow
+            c.fillStyle = 'rgba(15, 23, 42, 0.45)';
+            c.beginPath();
+            c.ellipse(bx + Math.floor(b.width / 2), by + b.height - 4, Math.floor(destW * 0.46), 14, 0, 0, Math.PI * 2);
+            c.fill();
+
+            c.imageSmoothingEnabled = false;
+            c.drawImage(img, destX, destY, destW, destH);
           } else {
-            this.drawPostOffice(c, bx, by, b.width, b.height);
+            // Drop shadow fallback
+            c.fillStyle = 'rgba(15, 23, 42, 0.4)';
+            c.fillRect(bx - 6, by + b.height - 8, b.width + 12, 16);
+
+            if (b.id === 'coffee_shop') {
+              this.drawCoffeeShop(c, bx, by, b.width, b.height);
+            } else if (b.id === 'guild_hall') {
+              this.drawGuildHall(c, bx, by, b.width, b.height);
+            } else if (b.id === 'python_cave') {
+              this.drawPythonCave(c, bx, by, b.width, b.height);
+            } else if (b.id === 'garden') {
+              this.drawGarden(c, bx, by, b.width, b.height);
+            } else if (b.id === 'sql_mines') {
+              this.drawSqlMines(c, bx, by, b.width, b.height);
+            } else if (b.id === 'blacksmith') {
+              this.drawBlacksmith(c, bx, by, b.width, b.height);
+            } else if (b.id === 'library') {
+              this.drawLibrary(c, bx, by, b.width, b.height);
+            } else if (b.id === 'home') {
+              this.drawHome(c, bx, by, b.width, b.height);
+            } else if (b.id === 'analytics_tower') {
+              this.drawAnalyticsTower(c, bx, by, b.width, b.height);
+            } else if (b.id === 'ml_lab') {
+              this.drawMLLab(c, bx, by, b.width, b.height);
+            } else if (b.id === 'boss_arena') {
+              this.drawBossArena(c, bx, by, b.width, b.height);
+            } else {
+              this.drawPostOffice(c, bx, by, b.width, b.height);
+            }
           }
 
           // Overhead floating plaque matching reference screenshot!
-          this.drawBuildingPlaque(c, bx + Math.floor(b.width / 2), by - 12, b.name, b.subtitle);
+          this.drawBuildingPlaque(c, bx + Math.floor(b.width / 2), by - 14, b.name, b.subtitle);
           c.restore();
         }
       });
@@ -285,27 +331,130 @@ export class WorldRenderer {
 
     // 2. Central Town Square Fountain (Centered at 1200, 960)
     depthList.push({
-      y: 960 + 30,
+      y: 960 + 35,
       render: (c) => this.drawTownSquareFountain(c, 1200 - cameraX, 960 - cameraY)
     });
 
-    // 3. Street Lanterns & Decorations
+    // 3. Street Lanterns & Lamp Posts
     const lanterns = [
       { x: 1060, y: 840 },
       { x: 1340, y: 840 },
       { x: 1060, y: 1080 },
       { x: 1340, y: 1080 },
       { x: 740, y: 730 },
-      { x: 1850, y: 740 }
+      { x: 1850, y: 740 },
+      { x: 750, y: 1530 },
+      { x: 1840, y: 1550 },
+      { x: 2160, y: 1100 }
     ];
     lanterns.forEach((lp) => {
       depthList.push({
-        y: lp.y,
-        render: (c) => pixelAssets.drawPixelLantern(c, lp.x - cameraX, lp.y - cameraY, false)
+        y: lp.y + 4,
+        render: (c) => {
+          const lampImg = assetManager.getImage('/assets/environment/lamp_post.png');
+          if (lampImg) {
+            c.save();
+            c.imageSmoothingEnabled = false;
+            c.fillStyle = 'rgba(15, 23, 42, 0.4)';
+            c.beginPath();
+            c.ellipse(lp.x - cameraX, lp.y - cameraY + 2, 8, 4, 0, 0, Math.PI * 2);
+            c.fill();
+            c.drawImage(lampImg, lp.x - cameraX - 16, lp.y - cameraY - 58, 32, 64);
+            c.restore();
+          } else {
+            pixelAssets.drawPixelLantern(c, lp.x - cameraX, lp.y - cameraY, false);
+          }
+        }
       });
     });
 
-    // 4. NPCs
+    // 4. Town Benches (near central plaza and gardens)
+    const benches = [
+      { x: 1100, y: 920 },
+      { x: 1300, y: 920 },
+      { x: 1100, y: 1020 },
+      { x: 1300, y: 1020 }
+    ];
+    benches.forEach((bench) => {
+      depthList.push({
+        y: bench.y + 12,
+        render: (c) => {
+          const benchImg = assetManager.getImage('/assets/environment/bench.png');
+          if (benchImg) {
+            c.save();
+            c.imageSmoothingEnabled = false;
+            c.fillStyle = 'rgba(15, 23, 42, 0.35)';
+            c.fillRect(bench.x - cameraX - 28, bench.y - cameraY + 8, 56, 8);
+            c.drawImage(benchImg, bench.x - cameraX - 32, bench.y - cameraY - 16, 64, 32);
+            c.restore();
+          }
+        }
+      });
+    });
+
+    // 5. Environmental Crates & Barrels
+    const barrelsAndCrates = [
+      { x: 2160, y: 940, type: 'barrel' },
+      { x: 2176, y: 954, type: 'crate' },
+      { x: 605, y: 550, type: 'barrel' },
+      { x: 620, y: 565, type: 'crate' },
+      { x: 1700, y: 950, type: 'crate' },
+      { x: 1715, y: 960, type: 'barrel' }
+    ];
+    barrelsAndCrates.forEach((prop) => {
+      depthList.push({
+        y: prop.y + 12,
+        render: (c) => {
+          const imgPath = prop.type === 'barrel' ? '/assets/environment/barrel.png' : '/assets/environment/crate.png';
+          const img = assetManager.getImage(imgPath);
+          if (img) {
+            c.save();
+            c.imageSmoothingEnabled = false;
+            c.fillStyle = 'rgba(15, 23, 42, 0.35)';
+            c.fillRect(prop.x - cameraX - 14, prop.y - cameraY + 8, 28, 6);
+            c.drawImage(img, prop.x - cameraX - 16, prop.y - cameraY - 18, 32, 32);
+            c.restore();
+          }
+        }
+      });
+    });
+
+    // 6. Natural Trees inside the Town (Gardens, Courtyards, Riverbanks)
+    const townTrees = [
+      { x: 660, y: 440, type: 'oak' },
+      { x: 860, y: 450, type: 'cherry' },
+      { x: 1680, y: 450, type: 'pine' },
+      { x: 1980, y: 460, type: 'autumn' },
+      { x: 570, y: 1260, type: 'oak' },
+      { x: 870, y: 1250, type: 'cherry' },
+      { x: 1670, y: 1260, type: 'pine' },
+      { x: 1980, y: 1260, type: 'autumn' },
+      { x: 2420, y: 780, type: 'oak' },
+      { x: 2420, y: 1100, type: 'pine' }
+    ];
+    townTrees.forEach((t) => {
+      depthList.push({
+        y: t.y + 24,
+        render: (c) => {
+          const imgPath = `/assets/environment/tree_${t.type}.png`;
+          const img = assetManager.getImage(imgPath);
+          if (img) {
+            c.save();
+            c.imageSmoothingEnabled = false;
+            c.fillStyle = 'rgba(15, 23, 42, 0.4)';
+            c.beginPath();
+            c.ellipse(t.x - cameraX, t.y - cameraY + 20, 36, 12, 0, 0, Math.PI * 2);
+            c.fill();
+            c.drawImage(img, t.x - cameraX - 58, t.y - cameraY - 90, 116, 116);
+            c.restore();
+          } else {
+            this.drawOakTree(c, t.x - cameraX, t.y - cameraY, 44);
+          }
+        }
+      });
+    });
+
+    // 7. NPCs (Production Idle Spritesheets)
     npcManager.npcs.forEach((npc) => {
       depthList.push({
         y: npc.y,
@@ -313,7 +462,15 @@ export class WorldRenderer {
       });
     });
 
-    // 5. Player Character (Aryan)
+    // 8. Mango the Cat Pet Companion (Autonomous Follow AI & Animations)
+    if (mangoPet) {
+      depthList.push({
+        y: mangoPet.y,
+        render: (c) => mangoPet.render(c, cameraX, cameraY)
+      });
+    }
+
+    // 9. Player Character (Aryan - 4-Direction Walk / Idle Cycles)
     depthList.push({
       y: player.state.y,
       render: (c) => player.render(c, cameraX, cameraY)
@@ -530,42 +687,58 @@ export class WorldRenderer {
   // 5. Town Square Fountain: Multi-tier circular stone fountain with sparkling water spray
   private drawTownSquareFountain(ctx: CanvasRenderingContext2D, fx: number, fy: number) {
     ctx.save();
-    // Stepped Circular Stone Basin
-    ctx.fillStyle = '#64748b';
-    ctx.beginPath();
-    ctx.arc(fx, fy, 46, 0, Math.PI * 2);
-    ctx.fill();
+    const fountainImg = assetManager.getImage('/assets/environment/fountain.png');
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.beginPath();
-    ctx.arc(fx, fy, 40, 0, Math.PI * 2);
-    ctx.fill();
+    if (fountainImg) {
+      ctx.imageSmoothingEnabled = false;
+      const fw = 136;
+      const fh = 136;
+      // Fountain shadow
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+      ctx.beginPath();
+      ctx.ellipse(fx, fy + 24, 62, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
 
-    // Clear Sparkling Water Pool
-    ctx.fillStyle = '#0284c7';
-    ctx.beginPath();
-    ctx.arc(fx, fy, 34, 0, Math.PI * 2);
-    ctx.fill();
+      // Draw Production Fountain Asset
+      ctx.drawImage(fountainImg, fx - fw / 2, fy - fh / 2 - 8, fw, fh);
+    } else {
+      // Stepped Circular Stone Basin
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.arc(fx, fy, 46, 0, Math.PI * 2);
+      ctx.fill();
 
-    ctx.fillStyle = '#38bdf8';
-    ctx.beginPath();
-    ctx.arc(fx, fy, 28, 0, Math.PI * 2);
-    ctx.fill();
+      ctx.fillStyle = '#94a3b8';
+      ctx.beginPath();
+      ctx.arc(fx, fy, 40, 0, Math.PI * 2);
+      ctx.fill();
 
-    // Central Stone Pillar & Spout
-    ctx.fillStyle = '#475569';
-    ctx.fillRect(fx - 8, fy - 14, 16, 20);
-    ctx.fillStyle = '#64748b';
-    ctx.fillRect(fx - 12, fy - 18, 24, 6);
+      // Clear Sparkling Water Pool
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.arc(fx, fy, 34, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(fx, fy, 28, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Central Stone Pillar & Spout
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(fx - 8, fy - 14, 16, 20);
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(fx - 12, fy - 18, 24, 6);
+    }
 
     // Animated Sparkling Water Droplets Spraying
     const sprayBob = Math.sin(this.animTimer * 6) * 4;
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(fx - 1, fy - 26 + sprayBob, 3, 8);
-    ctx.fillRect(fx - 7, fy - 22 + sprayBob, 2, 4);
-    ctx.fillRect(fx + 6, fy - 22 + sprayBob, 2, 4);
-    ctx.fillRect(fx - 12, fy - 14, 2, 2);
-    ctx.fillRect(fx + 11, fy - 14, 2, 2);
+    ctx.fillRect(fx - 1, fy - 36 + sprayBob, 3, 10);
+    ctx.fillRect(fx - 8, fy - 30 + sprayBob, 2, 6);
+    ctx.fillRect(fx + 7, fy - 30 + sprayBob, 2, 6);
+    ctx.fillRect(fx - 14, fy - 22 + sprayBob, 3, 3);
+    ctx.fillRect(fx + 12, fy - 22 + sprayBob, 3, 3);
 
     ctx.restore();
   }
@@ -893,6 +1066,19 @@ export class WorldRenderer {
   // Oak Tree (Lush Round Pixel Foliage)
   private drawOakTree(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
     ctx.save();
+    const oakImg = assetManager.getImage('/assets/environment/tree_oak.png');
+    if (oakImg) {
+      const tw = r * 2.5;
+      const th = r * 2.5;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + r - 2, tw * 0.32, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(oakImg, x - tw / 2, y - th + r, tw, th);
+      ctx.restore();
+      return;
+    }
     // Shadow
     ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
     ctx.fillRect(x - r + 4, y + r - 4, r * 2 - 8, 8);
@@ -912,6 +1098,19 @@ export class WorldRenderer {
   // Pine Tree
   private drawPineTree(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
     ctx.save();
+    const pineImg = assetManager.getImage('/assets/environment/tree_pine.png');
+    if (pineImg) {
+      const tw = r * 2.5;
+      const th = r * 2.5;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + r - 2, tw * 0.32, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(pineImg, x - tw / 2, y - th + r, tw, th);
+      ctx.restore();
+      return;
+    }
     ctx.fillStyle = '#5c3a21';
     ctx.fillRect(x - 4, y + 10, 8, r);
     ctx.fillStyle = '#1b4332';
