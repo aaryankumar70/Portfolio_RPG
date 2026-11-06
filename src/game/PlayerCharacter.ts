@@ -6,7 +6,7 @@ import { collisionSystem } from './CollisionSystem';
 export class PlayerCharacter {
   public state: PlayerState = {
     x: 1200,
-    y: 890, // Centered right above the Town Square fountain, matching reference screenshot!
+    y: 1015, // Standing directly in front of the Town Square fountain, matching reference screenshot!
     direction: 'down',
     animState: 'idle',
     isMoving: false,

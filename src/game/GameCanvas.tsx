@@ -33,7 +33,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const rendererRef = useRef<WorldRenderer>(new WorldRenderer());
   const playerRef = useRef<PlayerCharacter>(new PlayerCharacter());
   const npcManagerRef = useRef<NPCManager>(new NPCManager(npcs));
-  const mangoPetRef = useRef<MangoPet>(new MangoPet(1238, 902));
+  const mangoPetRef = useRef<MangoPet>(new MangoPet(1235, 1025));
   const particlesRef = useRef<ParticleSystem>(new ParticleSystem());
 
   const cameraRef = useRef<{ x: number; y: number }>({ x: 700, y: 550 });

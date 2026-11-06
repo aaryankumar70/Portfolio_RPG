@@ -67,174 +67,414 @@ export class WorldRenderer {
     this.drawYSortedEntities(ctx, cameraX, cameraY, timeOfDay, buildings, npcManager, player, mangoPet);
   }
 
-  // 1. Natural Green Grass Meadow Terrain
+  // 1. Natural Green Grass Meadow Terrain with Wildflowers & Foliage
   private drawTerrain(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number, timeOfDay: TimeOfDay) {
     const grassPattern = pixelAssets.getGrassPattern(ctx);
     ctx.fillStyle = grassPattern;
     ctx.fillRect(-cameraX, -cameraY, this.worldWidth, this.worldHeight);
 
-    // Soft organic grass clump accents
-    ctx.fillStyle = '#2d6d42';
-    for (let gx = 100; gx < this.worldWidth - 100; gx += 160) {
-      for (let gy = 360; gy < this.worldHeight - 100; gy += 130) {
+    // Organic meadow tone shifts & grass tufts
+    ctx.fillStyle = 'rgba(34, 109, 62, 0.35)';
+    for (let gx = 120; gx < this.worldWidth - 120; gx += 140) {
+      for (let gy = 360; gy < this.worldHeight - 120; gy += 110) {
         const px = gx - cameraX;
         const py = gy - cameraY;
-        ctx.fillRect(px, py, 18, 6);
-        ctx.fillRect(px + 4, py - 3, 10, 3);
+        const offset = ((gx * 17 + gy * 31) % 40) - 20;
+        ctx.fillRect(px + offset, py, 22, 6);
+        ctx.fillRect(px + offset + 4, py - 3, 14, 3);
       }
     }
+
+    // Handcrafted Wildflower Clusters (Poppies, Buttercups, Daisies, Lavender)
+    const flowerClusters = [
+      { x: 920, y: 760, type: 'poppy' },
+      { x: 1040, y: 820, type: 'daisy' },
+      { x: 1400, y: 810, type: 'buttercup' },
+      { x: 1520, y: 770, type: 'lavender' },
+      { x: 920, y: 1160, type: 'daisy' },
+      { x: 1050, y: 1220, type: 'poppy' },
+      { x: 1380, y: 1210, type: 'buttercup' },
+      { x: 1520, y: 1150, type: 'lavender' },
+      { x: 540, y: 820, type: 'poppy' },
+      { x: 550, y: 1140, type: 'buttercup' },
+      { x: 2040, y: 820, type: 'daisy' },
+      { x: 2050, y: 1140, type: 'poppy' },
+      { x: 920, y: 1600, type: 'lavender' },
+      { x: 1480, y: 1600, type: 'daisy' }
+    ];
+
+    flowerClusters.forEach((cl) => {
+      const cx = cl.x - cameraX;
+      const cy = cl.y - cameraY;
+      const color =
+        cl.type === 'poppy'
+          ? '#ef4444'
+          : cl.type === 'buttercup'
+          ? '#facc15'
+          : cl.type === 'lavender'
+          ? '#c084fc'
+          : '#f8fafc';
+
+      ctx.fillStyle = '#15803d'; // stems
+      ctx.fillRect(cx, cy + 2, 2, 4);
+      ctx.fillRect(cx + 6, cy + 3, 2, 4);
+      ctx.fillRect(cx - 5, cy + 3, 2, 4);
+
+      ctx.fillStyle = color; // blossom petals
+      ctx.fillRect(cx - 1, cy, 4, 3);
+      ctx.fillRect(cx + 5, cy + 1, 4, 3);
+      ctx.fillRect(cx - 6, cy + 1, 4, 3);
+
+      ctx.fillStyle = '#fef08a'; // center core
+      ctx.fillRect(cx, cy + 1, 2, 1);
+    });
+  }
+
+  // Helper to trace all interconnected road centerlines
+  private traceRoadNetwork(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number) {
+    const cx = 1200 - cameraX;
+    const cy = 960 - cameraY;
+
+    ctx.beginPath();
+
+    // 1. Central North Avenue to Guild Hall (1200, 710)
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(1200 - cameraX, 710 - cameraY);
+
+    // 2. Central South Avenue to Your Home (1200, 1530) & Post Office (1200, 1860)
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(1200 - cameraX, 1860 - cameraY);
+
+    // 3. West Path to Garden (740, 1100)
+    ctx.moveTo(cx, cy);
+    ctx.bezierCurveTo(1000 - cameraX, 970 - cameraY, 860 - cameraX, 1040 - cameraY, 740 - cameraX, 1100 - cameraY);
+
+    // 4. East Path to SQL Mines (1850, 1120) & Blacksmith (2300, 1110)
+    ctx.moveTo(cx, cy);
+    ctx.bezierCurveTo(1450 - cameraX, 970 - cameraY, 1680 - cameraX, 1040 - cameraY, 1850 - cameraX, 1120 - cameraY);
+    ctx.lineTo(2300 - cameraX, 1110 - cameraY);
+
+    // 5. North-West Diagonal Path to Coffee Shop (745, 710)
+    ctx.moveTo(cx, cy);
+    ctx.bezierCurveTo(1040 - cameraX, 860 - cameraY, 890 - cameraX, 780 - cameraY, 745 - cameraX, 710 - cameraY);
+
+    // 6. North-East Diagonal Path to Python Cave (1850, 720)
+    ctx.moveTo(cx, cy);
+    ctx.bezierCurveTo(1360 - cameraX, 860 - cameraY, 1620 - cameraX, 780 - cameraY, 1850 - cameraX, 720 - cameraY);
+
+    // 7. South-West Diagonal Path to Library (755, 1540)
+    ctx.moveTo(cx, cy);
+    ctx.bezierCurveTo(1040 - cameraX, 1080 - cameraY, 890 - cameraX, 1320 - cameraY, 755 - cameraX, 1540 - cameraY);
+
+    // 8. South-East Diagonal Path to Analytics Tower (1840, 1560)
+    ctx.moveTo(cx, cy);
+    ctx.bezierCurveTo(1360 - cameraX, 1080 - cameraY, 1620 - cameraX, 1320 - cameraY, 1840 - cameraX, 1560 - cameraY);
+
+    // 9. Crafting Path: Blacksmith North to ML Lab (2300, 720)
+    ctx.moveTo(2300 - cameraX, 1110 - cameraY);
+    ctx.lineTo(2300 - cameraX, 720 - cameraY);
+
+    // 10. Champions Path: Analytics Tower East to Boss Arena (2300, 1530)
+    ctx.moveTo(1840 - cameraX, 1540 - cameraY);
+    ctx.lineTo(2300 - cameraX, 1530 - cameraY);
+
+    // 11. River Crossing Path: Blacksmith East over Timber Bridge
+    ctx.moveTo(2300 - cameraX, 930 - cameraY);
+    ctx.lineTo(2620 - cameraX, 930 - cameraY);
   }
 
   // 2. Connected Cobblestone / Dirt Road Network & Central Circular Plaza
   private drawRoadsAndPlaza(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number) {
     ctx.save();
     const cobblePattern = pixelAssets.getCobblePattern(ctx);
-    ctx.fillStyle = cobblePattern;
-
     const centerX = 1200 - cameraX;
     const centerY = 960 - cameraY;
 
-    // A. Central Circular Plaza around Fountain (Radius ~160px)
+    // PASS 1: Rich Earth / Soil Shoulder Layer (Width 74px, Rounded Joins)
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#52361b';
+    ctx.lineWidth = 74;
+    this.traceRoadNetwork(ctx, cameraX, cameraY);
+    ctx.stroke();
+
+    // Central circular plaza earth base (Radius 160px)
+    ctx.fillStyle = '#52361b';
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 150, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, 160, 0, Math.PI * 2);
     ctx.fill();
 
-    // Cobblestone border rim
-    ctx.strokeStyle = '#5c3a21';
-    ctx.lineWidth = 4;
+    // PASS 2: Cobblestone Pavement Layer (Width 58px, Seamless Texture)
+    ctx.strokeStyle = cobblePattern;
+    ctx.lineWidth = 58;
+    this.traceRoadNetwork(ctx, cameraX, cameraY);
     ctx.stroke();
 
-    // B. Connected Radial Roads to all locations (Matching Reference Screenshot):
-    const roadWidth = 64;
-
-    // Road North to Guild Hall (1200, 480)
-    ctx.fillRect(centerX - roadWidth / 2, centerY - 480, roadWidth, 480);
-
-    // Road North-West to Coffee Shop (620, 520)
-    this.drawDiagonalPath(ctx, centerX - 100, centerY - 100, 745 - cameraX, 710 - cameraY, 56);
-
-    // Road North-East to Python Cave (1720, 520)
-    this.drawDiagonalPath(ctx, centerX + 100, centerY - 100, 1850 - cameraX, 720 - cameraY, 56);
-
-    // Road West to Garden (620, 920)
-    ctx.fillRect(740 - cameraX, centerY - roadWidth / 2, centerX - (740 - cameraX), roadWidth);
-
-    // Road East to SQL Mines (1720, 920) and Blacksmith (2180, 900)
-    ctx.fillRect(centerX, centerY - roadWidth / 2, 2300 - cameraX - centerX, roadWidth);
-
-    // Road South-West to Library (620, 1320)
-    this.drawDiagonalPath(ctx, centerX - 100, centerY + 100, 755 - cameraX, 1540 - cameraY, 56);
-
-    // Road South to Your Home (1160, 1320) & Post Office (1160, 1680)
-    ctx.fillRect(centerX - roadWidth / 2, centerY, roadWidth, 900);
-
-    // Road South-East to Analytics Tower (1720, 1320)
-    this.drawDiagonalPath(ctx, centerX + 100, centerY + 100, 1840 - cameraX, 1560 - cameraY, 56);
-
-    // Road from Blacksmith North to ML Lab (2180, 520)
-    ctx.fillRect(2300 - cameraX - roadWidth / 2, 720 - cameraY, roadWidth, 400);
-
-    // Road from Analytics Tower East to Boss Arena (2180, 1320)
-    ctx.fillRect(1840 - cameraX, 1530 - cameraY - roadWidth / 2, 460, roadWidth);
-
-    ctx.restore();
-  }
-
-  // Draw smooth angled path connecting road hubs
-  private drawDiagonalPath(
-    ctx: CanvasRenderingContext2D,
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-    width: number
-  ) {
-    ctx.save();
-    ctx.lineWidth = width;
-    ctx.strokeStyle = pixelAssets.getCobblePattern(ctx);
-    ctx.lineCap = 'round';
+    // Central circular plaza cobblestone courtyard (Radius 146px)
+    ctx.fillStyle = cobblePattern;
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
+    ctx.arc(centerX, centerY, 146, 0, Math.PI * 2);
+    ctx.fill();
+
+    // PASS 3: Plaza Border Rim & Concentric Stepping Rings
+    ctx.strokeStyle = '#8b5e3c';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 146, 0, Math.PI * 2);
     ctx.stroke();
+
+    // Inner flagstone accent ring surrounding the fountain
+    ctx.strokeStyle = 'rgba(139, 94, 60, 0.45)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 76, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Stepping Stones at Building Door Thresholds (Natural RPG Transitions)
+    const doors = [
+      { x: 745, y: 710 },   // Coffee Shop
+      { x: 1200, y: 710 },  // Guild Hall
+      { x: 1850, y: 720 },  // Python Cave
+      { x: 740, y: 1100 },  // Garden Gate
+      { x: 1850, y: 1120 }, // SQL Mines
+      { x: 2300, y: 1110 }, // Blacksmith
+      { x: 755, y: 1540 },  // Library
+      { x: 1200, y: 1530 }, // Your Home
+      { x: 1840, y: 1560 }, // Analytics Tower
+      { x: 2300, y: 720 },  // ML Lab
+      { x: 2300, y: 1530 }, // Boss Arena
+      { x: 1200, y: 1860 }  // Post Office
+    ];
+
+    doors.forEach((d) => {
+      this.drawDoorSteppingStones(ctx, d.x - cameraX, d.y - cameraY);
+    });
+
     ctx.restore();
   }
 
-  // 3. Eastern Winding River with Stone Bank Borders & Bridge
+  // Draw natural rounded flagstones leading up to building doors
+  private drawDoorSteppingStones(ctx: CanvasRenderingContext2D, sx: number, sy: number) {
+    ctx.save();
+    ctx.fillStyle = '#d4a373';
+    ctx.strokeStyle = '#8b5e3c';
+    ctx.lineWidth = 1;
+
+    // 3 subtle rounded stepping stones
+    const stones = [
+      { dx: -12, dy: -4, w: 10, h: 6 },
+      { dx: 2, dy: -6, w: 12, h: 7 },
+      { dx: -4, dy: 6, w: 11, h: 6 }
+    ];
+
+    stones.forEach((s) => {
+      ctx.beginPath();
+      ctx.ellipse(sx + s.dx, sy + s.dy, s.w / 2, s.h / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    });
+
+    ctx.restore();
+  }
+
+  // 3. Eastern Winding River with Natural Sand Banks, Stones, Animated Water & Timber Bridge
   private drawRiver(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number) {
     ctx.save();
-    const riverStartX = 2520 - cameraX;
 
-    // River Water (Animated Pixel Water Tile or Sparkling Blue)
+    // River centerline: x = 2520 + Math.sin(y * 0.008) * 40
+    const getRiverX = (y: number) => 2520 + Math.sin(y * 0.008) * 40 - cameraX;
+
+    // A. Sandy Shoreline along the western riverbank
+    ctx.lineWidth = 24;
+    ctx.strokeStyle = '#c59b6d';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(getRiverX(0) - 8, 0);
+    for (let y = 30; y <= 2200; y += 30) {
+      ctx.lineTo(getRiverX(y) - 8, y - cameraY);
+    }
+    ctx.stroke();
+
+    // B. River Water Basin Polygon
+    ctx.beginPath();
+    ctx.moveTo(getRiverX(0), 0);
+    for (let y = 20; y <= 2200; y += 20) {
+      ctx.lineTo(getRiverX(y), y - cameraY);
+    }
+    ctx.lineTo(this.worldWidth - cameraX, 2200 - cameraY);
+    ctx.lineTo(this.worldWidth - cameraX, 0);
+    ctx.closePath();
+
+    // Animated water pattern or lush azure water gradient
     const waterFrame = (Math.floor(this.animTimer * 3) % 3) + 1;
     const waterImg = assetManager.getImage(`/assets/tilesets/water_0${waterFrame}.png`);
     if (waterImg) {
       const pat = ctx.createPattern(waterImg, 'repeat');
       ctx.fillStyle = pat ? pat : '#2563eb';
     } else {
-      ctx.fillStyle = '#2563eb';
+      const waterGrad = ctx.createLinearGradient(2500 - cameraX, 0, this.worldWidth - cameraX, 0);
+      waterGrad.addColorStop(0, '#1d4ed8');
+      waterGrad.addColorStop(0.5, '#2563eb');
+      waterGrad.addColorStop(1, '#1e40af');
+      ctx.fillStyle = waterGrad;
     }
-    ctx.beginPath();
-    ctx.moveTo(riverStartX, 0);
-    ctx.bezierCurveTo(riverStartX - 50, 600, riverStartX + 60, 1200, riverStartX - 30, 2200);
-    ctx.lineTo(this.worldWidth - cameraX, 2200);
-    ctx.lineTo(this.worldWidth - cameraX, 0);
-    ctx.closePath();
     ctx.fill();
 
-    // River Stone Bank Border
-    ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.moveTo(riverStartX, 0);
-    ctx.bezierCurveTo(riverStartX - 50, 600, riverStartX + 60, 1200, riverStartX - 30, 2200);
-    ctx.stroke();
+    // C. River Stone Border along the bank
+    for (let y = 20; y <= 2200; y += 45) {
+      const rx = getRiverX(y);
+      const ry = y - cameraY;
+      const rockRadius = 5 + ((y * 7) % 4);
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.ellipse(rx + 2, ry, rockRadius, rockRadius * 0.7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(rx + 1, ry - 2, 2, 2);
+    }
 
-    // Water Shimmer Ripples
-    ctx.fillStyle = '#93c5fd';
+    // D. Animated Shimmer Ripples & Water Currents
     const flow = Math.floor(this.animTimer * 5);
-    for (let i = 0; i < 20; i++) {
-      const rx = riverStartX + 40 + ((i * 37) % 140);
-      const ry = ((flow * 14 + i * 110) % 2100);
-      ctx.fillRect(rx, ry, 28, 2);
+    ctx.fillStyle = '#93c5fd';
+    for (let i = 0; i < 28; i++) {
+      const ry = (flow * 14 + i * 85) % 2200;
+      const rx = getRiverX(ry) + 30 + ((i * 47) % 150);
+      ctx.fillRect(rx, ry, 26, 2);
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(rx + 6, ry, 12, 1);
+      ctx.fillRect(rx + 6, ry, 10, 1);
       ctx.fillStyle = '#93c5fd';
     }
 
-    // Wooden Bridge Crossing River at Y: 900-960
+    // E. Floating Water Lilies & Lily Pads
+    const lilySpots = [
+      { y: 350, xOff: 45 },
+      { y: 680, xOff: 60 },
+      { y: 1240, xOff: 50 },
+      { y: 1620, xOff: 70 },
+      { y: 1980, xOff: 40 }
+    ];
+    lilySpots.forEach((ls) => {
+      const lx = getRiverX(ls.y) + ls.xOff;
+      const ly = ls.y - cameraY;
+      const bob = Math.sin(this.animTimer * 2 + ls.y) * 2;
+
+      // Green lily pad
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.arc(lx, ly + bob, 9, 0, Math.PI * 1.85);
+      ctx.fill();
+
+      // Flower blossom (White & Pink)
+      ctx.fillStyle = '#fbcfe8';
+      ctx.fillRect(lx - 2, ly + bob - 3, 5, 5);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(lx - 1, ly + bob - 2, 3, 3);
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(lx, ly + bob - 1, 1, 1);
+    });
+
+    // F. Handcrafted Timber Bridge Crossing River at Y: 900-960
     const bridgeX = 2460 - cameraX;
     const bridgeY = 900 - cameraY;
     const bridgeW = 150;
     const bridgeH = 64;
 
-    ctx.fillStyle = '#451a03'; // dark timber
+    // Bridge Shadow on River
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+    ctx.fillRect(bridgeX, bridgeY + bridgeH, bridgeW, 14);
+
+    // Sturdy Bridge Main Deck & Planks
+    ctx.fillStyle = '#451a03'; // timber foundation
     ctx.fillRect(bridgeX, bridgeY, bridgeW, bridgeH);
-    ctx.fillStyle = '#78350f';
     for (let by = 0; by < bridgeH; by += 8) {
-      ctx.fillRect(bridgeX, bridgeY + by, bridgeW, 6);
+      ctx.fillStyle = by % 16 === 0 ? '#78350f' : '#92400e';
+      ctx.fillRect(bridgeX, bridgeY + by, bridgeW, 7);
+      // Wood plank nail studs
+      ctx.fillStyle = '#1c1917';
+      ctx.fillRect(bridgeX + 6, bridgeY + by + 2, 2, 2);
+      ctx.fillRect(bridgeX + bridgeW - 8, bridgeY + by + 2, 2, 2);
     }
-    // Bridge rails
+
+    // Top and Bottom Bridge Rails
     ctx.fillStyle = '#291003';
-    ctx.fillRect(bridgeX, bridgeY - 3, bridgeW, 4);
-    ctx.fillRect(bridgeX, bridgeY + bridgeH - 1, bridgeW, 4);
+    ctx.fillRect(bridgeX, bridgeY - 4, bridgeW, 5);
+    ctx.fillRect(bridgeX, bridgeY + bridgeH - 1, bridgeW, 5);
+
+    // Vertical Railing Posts with caps
+    for (let bx = bridgeX + 4; bx <= bridgeX + bridgeW - 8; bx += 24) {
+      ctx.fillStyle = '#b45309';
+      ctx.fillRect(bx, bridgeY - 8, 6, 8);
+      ctx.fillRect(bx, bridgeY + bridgeH, 6, 8);
+      ctx.fillStyle = '#fde047'; // brass post cap
+      ctx.fillRect(bx + 1, bridgeY - 9, 4, 2);
+      ctx.fillRect(bx + 1, bridgeY + bridgeH + 7, 4, 2);
+    }
 
     ctx.restore();
   }
 
-  // 4. Perimeter Rounded Oak & Pine Trees (Enclosing the Town)
+  // 4. Perimeter Dense Ancient Forest Enclosing All 4 Borders of the World
   private drawPerimeterTrees(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number) {
     ctx.save();
-    // Left border trees
-    for (let ty = 340; ty < this.worldHeight; ty += 120) {
-      this.drawOakTree(ctx, 400 - cameraX, ty - cameraY, 46);
-      this.drawPineTree(ctx, 320 - cameraX, ty + 50 - cameraY, 38);
+
+    // A. North Border Forest (Y: 280 - 420)
+    for (let tx = 80; tx < this.worldWidth - 200; tx += 110) {
+      const type = tx % 330 === 0 ? 'pine' : tx % 220 === 0 ? 'autumn' : 'oak';
+      this.drawForestTree(ctx, tx - cameraX, 330 - cameraY, type);
+      if (tx % 2 === 0) {
+        this.drawForestTree(ctx, tx + 55 - cameraX, 390 - cameraY, 'pine');
+      }
     }
-    // Top border trees
-    for (let tx = 400; tx < this.worldWidth - 300; tx += 140) {
-      this.drawOakTree(ctx, tx - cameraX, 340 - cameraY, 44);
+
+    // B. West Border Forest (X: 80 - 420)
+    for (let ty = 340; ty < this.worldHeight - 100; ty += 110) {
+      const type = ty % 330 === 0 ? 'pine' : ty % 220 === 0 ? 'autumn' : 'oak';
+      this.drawForestTree(ctx, 330 - cameraX, ty - cameraY, type);
+      this.drawForestTree(ctx, 230 - cameraX, ty + 50 - cameraY, 'pine');
+      this.drawForestTree(ctx, 130 - cameraX, ty + 20 - cameraY, 'oak');
     }
+
+    // C. South Border Forest (Y: 1960 - 2200)
+    for (let tx = 80; tx < this.worldWidth - 200; tx += 110) {
+      const type = tx % 330 === 0 ? 'pine' : tx % 220 === 0 ? 'autumn' : 'oak';
+      this.drawForestTree(ctx, tx - cameraX, 2040 - cameraY, type);
+      this.drawForestTree(ctx, tx + 55 - cameraX, 2130 - cameraY, 'pine');
+    }
+
+    // D. East Border Forest (X: 2660 - 2800 framing river)
+    for (let ty = 100; ty < this.worldHeight; ty += 120) {
+      this.drawForestTree(ctx, 2690 - cameraX, ty - cameraY, 'pine');
+      this.drawForestTree(ctx, 2760 - cameraX, ty + 60 - cameraY, 'oak');
+    }
+
     ctx.restore();
+  }
+
+  // Helper to render forest trees using assetManager with procedural fallback
+  private drawForestTree(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    type: 'oak' | 'pine' | 'autumn' | 'cherry'
+  ) {
+    const imgPath = `/assets/environment/tree_${type}.png`;
+    const img = assetManager.getImage(imgPath);
+    if (img) {
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + 20, 36, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.drawImage(img, x - 58, y - 90, 116, 116);
+      ctx.restore();
+    } else {
+      if (type === 'pine') {
+        this.drawPineTree(ctx, x, y, 40);
+      } else {
+        this.drawOakTree(ctx, x, y, 44);
+      }
+    }
   }
 
   // 5. Flying Birds
@@ -275,12 +515,15 @@ export class WorldRenderer {
           const spritePath = WorldRenderer.BUILDING_SPRITE_MAP[b.id];
           const img = spritePath ? assetManager.getImage(spritePath) : null;
 
+          let roofTopY = by;
+
           if (img) {
             const scale = b.id === 'analytics_tower' ? 2.0 : 2.2;
             const destW = Math.floor(img.naturalWidth * scale);
             const destH = Math.floor(img.naturalHeight * scale);
             const destX = Math.floor(bx + (b.width - destW) / 2);
             const destY = Math.floor(by + b.height - destH);
+            roofTopY = destY;
 
             // Ground contact shadow
             c.fillStyle = 'rgba(15, 23, 42, 0.45)';
@@ -322,8 +565,9 @@ export class WorldRenderer {
             }
           }
 
-          // Overhead floating plaque matching reference screenshot!
-          this.drawBuildingPlaque(c, bx + Math.floor(b.width / 2), by - 14, b.name, b.subtitle);
+          // Overhead floating plaque positioned cleanly above roof ridge
+          const plaqueY = roofTopY - 38;
+          this.drawBuildingPlaque(c, bx + Math.floor(b.width / 2), plaqueY, b.name, b.subtitle);
           c.restore();
         }
       });
@@ -335,45 +579,62 @@ export class WorldRenderer {
       render: (c) => this.drawTownSquareFountain(c, 1200 - cameraX, 960 - cameraY)
     });
 
-    // 3. Street Lanterns & Lamp Posts
+    // 3. Street Lanterns & Lamp Posts with Warm Radial Amber Light Glow
     const lanterns = [
-      { x: 1060, y: 840 },
-      { x: 1340, y: 840 },
-      { x: 1060, y: 1080 },
-      { x: 1340, y: 1080 },
-      { x: 740, y: 730 },
+      { x: 1080, y: 860 },
+      { x: 1320, y: 860 },
+      { x: 1080, y: 1060 },
+      { x: 1320, y: 1060 },
+      { x: 745, y: 740 },
       { x: 1850, y: 740 },
-      { x: 750, y: 1530 },
-      { x: 1840, y: 1550 },
+      { x: 755, y: 1560 },
+      { x: 1840, y: 1580 },
       { x: 2160, y: 1100 }
     ];
     lanterns.forEach((lp) => {
       depthList.push({
         y: lp.y + 4,
         render: (c) => {
+          c.save();
+          // Warm radial amber lantern glow
+          const glow = c.createRadialGradient(
+            lp.x - cameraX,
+            lp.y - cameraY - 40,
+            2,
+            lp.x - cameraX,
+            lp.y - cameraY - 40,
+            38
+          );
+          glow.addColorStop(0, 'rgba(251, 191, 36, 0.4)');
+          glow.addColorStop(0.5, 'rgba(245, 158, 11, 0.15)');
+          glow.addColorStop(1, 'transparent');
+          c.fillStyle = glow;
+          c.beginPath();
+          c.arc(lp.x - cameraX, lp.y - cameraY - 40, 38, 0, Math.PI * 2);
+          c.fill();
+
           const lampImg = assetManager.getImage('/assets/environment/lamp_post.png');
           if (lampImg) {
-            c.save();
             c.imageSmoothingEnabled = false;
             c.fillStyle = 'rgba(15, 23, 42, 0.4)';
             c.beginPath();
             c.ellipse(lp.x - cameraX, lp.y - cameraY + 2, 8, 4, 0, 0, Math.PI * 2);
             c.fill();
             c.drawImage(lampImg, lp.x - cameraX - 16, lp.y - cameraY - 58, 32, 64);
-            c.restore();
           } else {
             pixelAssets.drawPixelLantern(c, lp.x - cameraX, lp.y - cameraY, false);
           }
+          c.restore();
         }
       });
     });
 
-    // 4. Town Benches (near central plaza and gardens)
+    // 4. Town Benches (Around the central plaza & near library)
     const benches = [
-      { x: 1100, y: 920 },
-      { x: 1300, y: 920 },
-      { x: 1100, y: 1020 },
-      { x: 1300, y: 1020 }
+      { x: 1110, y: 920 },
+      { x: 1290, y: 920 },
+      { x: 1110, y: 1010 },
+      { x: 1290, y: 1010 }
     ];
     benches.forEach((bench) => {
       depthList.push({
@@ -392,14 +653,110 @@ export class WorldRenderer {
       });
     });
 
-    // 5. Environmental Crates & Barrels
+    // 5. Garden Wooden Fencing (Enclosing the 240x200 Garden with open gate at 740, 1100)
+    depthList.push({
+      y: 925,
+      render: (c) => {
+        c.save();
+        const fenceImg = assetManager.getImage('/assets/environment/fence_horizontal.png');
+        // Top fence line (Y: 920, X: 620 to 860)
+        for (let fx = 620; fx <= 830; fx += 32) {
+          if (fenceImg) {
+            c.drawImage(fenceImg, fx - cameraX, 915 - cameraY, 32, 16);
+          } else {
+            c.fillStyle = '#78350f';
+            c.fillRect(fx - cameraX, 918 - cameraY, 32, 8);
+          }
+        }
+        c.restore();
+      }
+    });
+
+    depthList.push({
+      y: 1110,
+      render: (c) => {
+        c.save();
+        const fenceImg = assetManager.getImage('/assets/environment/fence_horizontal.png');
+        // Bottom fence line left of gate (X: 620 to 710)
+        for (let fx = 620; fx < 700; fx += 32) {
+          if (fenceImg) {
+            c.drawImage(fenceImg, fx - cameraX, 1105 - cameraY, 32, 16);
+          } else {
+            c.fillStyle = '#78350f';
+            c.fillRect(fx - cameraX, 1108 - cameraY, 32, 8);
+          }
+        }
+        // Bottom fence line right of gate (X: 770 to 860)
+        for (let fx = 770; fx <= 830; fx += 32) {
+          if (fenceImg) {
+            c.drawImage(fenceImg, fx - cameraX, 1105 - cameraY, 32, 16);
+          } else {
+            c.fillStyle = '#78350f';
+            c.fillRect(fx - cameraX, 1108 - cameraY, 32, 8);
+          }
+        }
+        // Flower patch inside garden
+        const flowerImg = assetManager.getImage('/assets/environment/flowers_patch.png');
+        if (flowerImg) {
+          c.drawImage(flowerImg, 640 - cameraX, 970 - cameraY, 48, 48);
+          c.drawImage(flowerImg, 780 - cameraX, 970 - cameraY, 48, 48);
+        }
+        c.restore();
+      }
+    });
+
+    // 6. Python Cave Magical Glowing Blue Crystals
+    const crystals = [
+      { x: 1720, y: 560, scale: 32 },
+      { x: 1970, y: 550, scale: 36 },
+      { x: 1730, y: 690, scale: 28 },
+      { x: 1960, y: 680, scale: 32 }
+    ];
+    crystals.forEach((cr) => {
+      depthList.push({
+        y: cr.y + 10,
+        render: (c) => {
+          c.save();
+          // Arcane cyan pulse glow
+          const pulse = Math.sin(this.animTimer * 4 + cr.x) * 4;
+          const cGlow = c.createRadialGradient(
+            cr.x - cameraX,
+            cr.y - cameraY - 10,
+            2,
+            cr.x - cameraX,
+            cr.y - cameraY - 10,
+            24 + pulse
+          );
+          cGlow.addColorStop(0, 'rgba(56, 189, 248, 0.45)');
+          cGlow.addColorStop(0.6, 'rgba(14, 165, 233, 0.15)');
+          cGlow.addColorStop(1, 'transparent');
+          c.fillStyle = cGlow;
+          c.beginPath();
+          c.arc(cr.x - cameraX, cr.y - cameraY - 10, 24 + pulse, 0, Math.PI * 2);
+          c.fill();
+
+          const crysImg = assetManager.getImage('/assets/environment/crystal_blue.png');
+          if (crysImg) {
+            c.imageSmoothingEnabled = false;
+            c.drawImage(crysImg, cr.x - cameraX - cr.scale / 2, cr.y - cameraY - cr.scale, cr.scale, cr.scale);
+          } else {
+            c.fillStyle = '#38bdf8';
+            c.fillRect(cr.x - cameraX - 4, cr.y - cameraY - 16, 8, 16);
+          }
+          c.restore();
+        }
+      });
+    });
+
+    // 7. Environmental Crates & Barrels
     const barrelsAndCrates = [
       { x: 2160, y: 940, type: 'barrel' },
       { x: 2176, y: 954, type: 'crate' },
       { x: 605, y: 550, type: 'barrel' },
       { x: 620, y: 565, type: 'crate' },
       { x: 1700, y: 950, type: 'crate' },
-      { x: 1715, y: 960, type: 'barrel' }
+      { x: 1715, y: 960, type: 'barrel' },
+      { x: 1045, y: 1530, type: 'barrel' } // near Your Home
     ];
     barrelsAndCrates.forEach((prop) => {
       depthList.push({
@@ -419,16 +776,20 @@ export class WorldRenderer {
       });
     });
 
-    // 6. Natural Trees inside the Town (Gardens, Courtyards, Riverbanks)
+    // 8. Natural Town Trees (Framing Districts & Courtyards)
     const townTrees = [
       { x: 660, y: 440, type: 'oak' },
-      { x: 860, y: 450, type: 'cherry' },
+      { x: 880, y: 450, type: 'cherry' },
+      { x: 1000, y: 440, type: 'oak' },
+      { x: 1400, y: 440, type: 'autumn' },
       { x: 1680, y: 450, type: 'pine' },
-      { x: 1980, y: 460, type: 'autumn' },
+      { x: 2010, y: 460, type: 'autumn' },
       { x: 570, y: 1260, type: 'oak' },
-      { x: 870, y: 1250, type: 'cherry' },
+      { x: 910, y: 1250, type: 'cherry' },
+      { x: 1000, y: 1280, type: 'oak' },
+      { x: 1400, y: 1280, type: 'cherry' },
       { x: 1670, y: 1260, type: 'pine' },
-      { x: 1980, y: 1260, type: 'autumn' },
+      { x: 2000, y: 1260, type: 'autumn' },
       { x: 2420, y: 780, type: 'oak' },
       { x: 2420, y: 1100, type: 'pine' }
     ];
