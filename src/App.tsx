@@ -7,19 +7,8 @@ import { BUILDINGS, NPCS, INITIAL_QUESTS, ARYAN_STATS } from './data/portfolioDa
 import { BuildingData, TimeOfDay, Quest, NPC } from './types';
 import { soundManager } from './audio/SoundManager';
 
-// Interior Scenes
-import { CoffeeShopInterior } from './components/interiors/CoffeeShopInterior';
-import { PythonCaveInterior } from './components/interiors/PythonCaveInterior';
-import { HomeInterior } from './components/interiors/HomeInterior';
-import { GardenInterior } from './components/interiors/GardenInterior';
-import { SqlMinesInterior } from './components/interiors/SqlMinesInterior';
-import { BlacksmithInterior } from './components/interiors/BlacksmithInterior';
-import { LibraryInterior } from './components/interiors/LibraryInterior';
-import { AnalyticsTowerInterior } from './components/interiors/AnalyticsTowerInterior';
-import { MLLaboratoryInterior } from './components/interiors/MLLaboratoryInterior';
-import { BossArenaInterior } from './components/interiors/BossArenaInterior';
-import { PostOfficeInterior } from './components/interiors/PostOfficeInterior';
-import { GuildHallInterior } from './components/interiors/GuildHallInterior';
+// Explorable Canvas RPG Interior Environment
+import { InteriorGameCanvas } from './components/interiors/InteriorGameCanvas';
 
 // Modals
 import { AICompanionModal } from './components/modals/AICompanionModal';
@@ -63,44 +52,40 @@ export const App: React.FC = () => {
     });
   }, [maxXp]);
 
-  // Handle buying a coffee at Coffee Shop
+  // Handle buying a coffee at Coffee Shop (Rule 7C: Increments count, NO XP awarded)
   const handleBuyCoffee = useCallback(() => {
     setCoffeeCount((prev) => prev + 1);
-    handleXpGain(40);
-  }, [handleXpGain]);
+  }, []);
 
-  // Handle Entering a Building
+  // Handle Entering a Building (Rule 7A: Entering does NOT auto-complete quests)
   const handleEnterBuilding = useCallback((buildingId: string) => {
     setIsTransitioning(true);
     soundManager.playEnterBuilding();
-
-    // Complete corresponding quest if active
-    setQuests((prevQuests) =>
-      prevQuests.map((q) => {
-        if (!q.completed && q.buildingId === buildingId) {
-          handleXpGain(q.rewardXp);
-          return { ...q, completed: true };
-        }
-        return q;
-      })
-    );
 
     setTimeout(() => {
       setActiveBuilding(buildingId);
       setActiveModal(null);
       setIsTransitioning(false);
     }, 350);
-  }, [handleXpGain]);
+  }, []);
 
-  // Back to Town Overworld
+  // Back to Town Overworld (Rule 4: Teleports Aryan to exact exterior building doorstep)
   const handleBackToTown = useCallback(() => {
     setIsTransitioning(true);
     soundManager.playEnterBuilding();
+    const b = BUILDINGS.find((bld) => bld.id === activeBuilding);
+    if (b) {
+      window.dispatchEvent(
+        new CustomEvent('teleport-player', {
+          detail: { x: b.doorX, y: b.doorY + 25 }
+        })
+      );
+    }
     setTimeout(() => {
       setActiveBuilding(null);
       setIsTransitioning(false);
     }, 300);
-  }, []);
+  }, [activeBuilding]);
 
   // Fast Travel to Town Square Fountain
   const handleFastTravelToTownSquare = useCallback(() => {
@@ -194,93 +179,14 @@ export const App: React.FC = () => {
         )}
       </div>
 
-      {/* 3. DEDICATED BUILDING INTERIORS (Seamless Transitions) */}
+      {/* 3. DEDICATED EXPLORABLE CANVAS INTERIORS (Physical Walking, Collisions, Depth Sorting, Mango Companion) */}
       {activeBuilding && (
         <div className="absolute inset-0 z-30 animate-in fade-in zoom-in-95 duration-300">
-          {activeBuilding === 'coffee_shop' && (
-            <CoffeeShopInterior
-              onBack={handleBackToTown}
-              onBuyCoffee={handleBuyCoffee}
-              coffeeCount={coffeeCount}
-            />
-          )}
-
-          {activeBuilding === 'python_cave' && (
-            <PythonCaveInterior
-              onBack={handleBackToTown}
-              onGainXp={handleXpGain}
-            />
-          )}
-
-          {activeBuilding === 'home' && (
-            <HomeInterior
-              onBack={handleBackToTown}
-              onOpenQuests={() => setActiveModal('quests')}
-              playerLevel={playerLevel}
-              playerXp={playerXp}
-              coffeeCount={coffeeCount}
-            />
-          )}
-
-          {activeBuilding === 'garden' && (
-            <GardenInterior
-              onBack={handleBackToTown}
-              onGainXp={handleXpGain}
-            />
-          )}
-
-          {activeBuilding === 'sql_mines' && (
-            <SqlMinesInterior
-              onBack={handleBackToTown}
-              onGainXp={handleXpGain}
-            />
-          )}
-
-          {activeBuilding === 'blacksmith' && (
-            <BlacksmithInterior
-              onBack={handleBackToTown}
-              onGainXp={handleXpGain}
-            />
-          )}
-
-          {activeBuilding === 'library' && (
-            <LibraryInterior
-              onBack={handleBackToTown}
-              onGainXp={handleXpGain}
-            />
-          )}
-
-          {activeBuilding === 'analytics_tower' && (
-            <AnalyticsTowerInterior onBack={handleBackToTown} />
-          )}
-
-          {activeBuilding === 'ml_lab' && (
-            <MLLaboratoryInterior
-              onBack={handleBackToTown}
-              onGainXp={handleXpGain}
-            />
-          )}
-
-          {activeBuilding === 'boss_arena' && (
-            <BossArenaInterior
-              onBack={handleBackToTown}
-              onGainXp={handleXpGain}
-            />
-          )}
-
-          {activeBuilding === 'post_office' && (
-            <PostOfficeInterior
-              onBack={handleBackToTown}
-              onGainXp={handleXpGain}
-            />
-          )}
-
-          {activeBuilding === 'guild_hall' && (
-            <GuildHallInterior
-              onBack={handleBackToTown}
-              onOpenQuests={() => setActiveModal('quests')}
-            />
-          )}
+          <InteriorGameCanvas
+            buildingId={activeBuilding}
+            onExit={handleBackToTown}
+            onBuyCoffee={handleBuyCoffee}
+          />
         </div>
       )}
 

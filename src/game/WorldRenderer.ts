@@ -518,9 +518,8 @@ export class WorldRenderer {
           let roofTopY = by;
 
           if (img) {
-            const scale = b.id === 'analytics_tower' ? 2.0 : 2.2;
-            const destW = Math.floor(img.naturalWidth * scale);
-            const destH = Math.floor(img.naturalHeight * scale);
+            const destW = Math.max(b.width, 240);
+            const destH = Math.floor(destW * (img.naturalHeight / img.naturalWidth));
             const destX = Math.floor(bx + (b.width - destW) / 2);
             const destY = Math.floor(by + b.height - destH);
             roofTopY = destY;
@@ -533,6 +532,9 @@ export class WorldRenderer {
 
             c.imageSmoothingEnabled = false;
             c.drawImage(img, destX, destY, destW, destH);
+
+            // Dynamic atmospheric animated overlays
+            this.drawBuildingAnimatedOverlays(c, b.id, destX, destY, destW, destH);
           } else {
             // Drop shadow fallback
             c.fillStyle = 'rgba(15, 23, 42, 0.4)';
@@ -844,6 +846,90 @@ export class WorldRenderer {
   }
 
   // -------------------------------------------------------------
+  // DYNAMIC ATMOSPHERIC ANIMATED OVERLAYS FOR BUILDINGS
+  // -------------------------------------------------------------
+  private drawBuildingAnimatedOverlays(
+    ctx: CanvasRenderingContext2D,
+    id: string,
+    bx: number,
+    by: number,
+    bw: number,
+    bh: number
+  ) {
+    ctx.save();
+
+    if (id === 'coffee_shop') {
+      // Steam puffs rising from coffee cup on roof
+      const cupX = bx + Math.floor(bw / 2);
+      const cupY = by + 22;
+      const steamBob = Math.sin(this.animTimer * 4) * 3;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+      ctx.fillRect(cupX - 5, cupY - 18 + steamBob, 3, 5);
+      ctx.fillRect(cupX + 4, cupY - 22 - steamBob, 3, 6);
+      ctx.fillRect(cupX - 1, cupY - 26 + steamBob * 0.5, 2, 4);
+    } else if (id === 'blacksmith') {
+      // Roaring hearth flame animation in forge furnace
+      const forgeX = bx + Math.floor(bw / 2) - 16;
+      const forgeY = by + bh - 42;
+      const flicker = Math.sin(this.animTimer * 8) * 3;
+      ctx.fillStyle = '#f97316';
+      ctx.fillRect(forgeX + 4, forgeY + 8 + flicker, 16, 12 - flicker);
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(forgeX + 7, forgeY + 12 + flicker * 0.5, 10, 8);
+
+      // Chimney dark smoke puffs
+      const chimX = bx + bw - 48;
+      const chimY = by + 12;
+      const smokeDrift = (this.animTimer * 22) % 32;
+      ctx.fillStyle = 'rgba(100, 116, 139, 0.45)';
+      ctx.beginPath();
+      ctx.arc(chimX + 12 + Math.sin(smokeDrift * 0.3) * 4, chimY - smokeDrift, 5 + smokeDrift * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (id === 'python_cave') {
+      // Pulsing cyan & blue crystal magic glow
+      const pulse = Math.sin(this.animTimer * 3.5) * 4;
+      const cGlow = ctx.createRadialGradient(bx + 40, by + bh - 32, 2, bx + 40, by + bh - 32, 26 + pulse);
+      cGlow.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
+      cGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = cGlow;
+      ctx.beginPath();
+      ctx.arc(bx + 40, by + bh - 32, 26 + pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      const cGlow2 = ctx.createRadialGradient(bx + bw - 40, by + bh - 32, 2, bx + bw - 40, by + bh - 32, 26 + pulse);
+      cGlow2.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
+      cGlow2.addColorStop(1, 'transparent');
+      ctx.fillStyle = cGlow2;
+      ctx.beginPath();
+      ctx.arc(bx + bw - 40, by + bh - 32, 26 + pulse, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (id === 'ml_lab') {
+      // Neural core pink/purple pulse in glass dome
+      const domeX = bx + Math.floor(bw / 2);
+      const domeY = by + 46;
+      const corePulse = Math.sin(this.animTimer * 5) * 3;
+      const mGlow = ctx.createRadialGradient(domeX, domeY, 2, domeX, domeY, 22 + corePulse);
+      mGlow.addColorStop(0, 'rgba(236, 72, 153, 0.45)');
+      mGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = mGlow;
+      ctx.beginPath();
+      ctx.arc(domeX, domeY, 22 + corePulse, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (id === 'home') {
+      // White smoke puffs from home chimney
+      const hChimX = bx + bw - 44;
+      const hChimY = by + 8;
+      const hSmoke = (this.animTimer * 18) % 28;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.beginPath();
+      ctx.arc(hChimX + 10 + Math.sin(hSmoke * 0.4) * 3, hChimY - hSmoke, 4 + hSmoke * 0.16, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  // -------------------------------------------------------------
   // BUILDING ARCHITECTURE (HANDCRAFTED MATCHING REFERENCE SCREENSHOT)
   // -------------------------------------------------------------
 
@@ -885,6 +971,25 @@ export class WorldRenderer {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.fillRect(cupX - 6, cupY - 22 + steamBob, 3, 5);
     ctx.fillRect(cupX + 3, cupY - 26 - steamBob, 3, 6);
+
+    // Red & Cream Striped Awning over entrance
+    const awnX = x + Math.floor(w / 2) - 40;
+    const awnY = y + h - 58;
+    for (let ax = awnX; ax < awnX + 80; ax += 10) {
+      const isRed = Math.floor((ax - awnX) / 10) % 2 === 0;
+      ctx.fillStyle = isRed ? '#dc2626' : '#fef08a';
+      ctx.fillRect(ax, awnY, 10, 14);
+    }
+
+    // Flower boxes under windows
+    ctx.fillStyle = '#5c3a21';
+    ctx.fillRect(x + 22, y + 84, 28, 5);
+    ctx.fillRect(x + w - 50, y + 84, 28, 5);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(x + 24, y + 81, 4, 3);
+    ctx.fillRect(x + 32, y + 81, 4, 3);
+    ctx.fillRect(x + w - 48, y + 81, 4, 3);
+    ctx.fillRect(x + w - 40, y + 81, 4, 3);
 
     // Front Door & Warm Lit Windows
     const dx = x + Math.floor(w / 2) - 18;
