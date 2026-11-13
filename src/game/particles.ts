@@ -16,6 +16,12 @@ export class ParticleSystem {
   public particles: Particle[] = [];
 
   public update(worldWidth: number, worldHeight: number, timeOfDay: string) {
+    // Honor prefers-reduced-motion (reduce particle count to 0)
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.particles = [];
+      return;
+    }
+
     // 1. Crisp falling sakura petals
     const sakuraCount = this.particles.filter(p => p.type === 'sakura').length;
     if (sakuraCount < 40) {

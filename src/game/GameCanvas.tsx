@@ -33,6 +33,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
   const viewportRef = useRef<{ scale: number; destX: number; destY: number }>({ scale: 1, destX: 0, destY: 0 });
+  const showDebugRef = useRef<boolean>(false);
+  const fpsRef = useRef<number>(60);
 
   const rendererRef = useRef<WorldRenderer>(new WorldRenderer());
   const playerRef = useRef<PlayerCharacter>(new PlayerCharacter());
@@ -78,6 +80,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
+      if (e.code === 'F3') {
+        e.preventDefault();
+        showDebugRef.current = !showDebugRef.current;
+        return;
+      }
 
       keysRef.current[e.code] = true;
       soundManager.startAmbient();
@@ -272,6 +280,89 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       // Day / Night Lighting Shader with single cached lightmap & additive light pools
       renderer.renderLightingShader(offCtx, camX, camY, timeOfDay, player);
+
+      // F3 Debug Overlay & Hitbox Visualizer
+      fpsRef.current = fpsRef.current * 0.92 + (1 / Math.max(0.001, dt)) * 0.08;
+      if (showDebugRef.current) {
+        offCtx.save();
+        offCtx.lineWidth = 1;
+
+        // 1. Wireframe Collision Hitboxes
+        // Buildings: Cyan outlines
+        offCtx.strokeStyle = 'rgba(34, 211, 238, 0.85)';
+        for (const b of buildings) {
+          offCtx.strokeRect(
+            Math.round(b.collisionBox.x - camX),
+            Math.round(b.collisionBox.y - camY),
+            b.collisionBox.w,
+            b.collisionBox.h
+          );
+        }
+
+        // Town Fountain: Amber outline
+        offCtx.strokeStyle = 'rgba(245, 158, 11, 0.85)';
+        offCtx.beginPath();
+        offCtx.arc(Math.round(1200 - camX), Math.round(960 - camY), 44, 0, Math.PI * 2);
+        offCtx.stroke();
+
+        // Player foot capsule: Green outline
+        offCtx.strokeStyle = 'rgba(34, 197, 94, 0.95)';
+        offCtx.beginPath();
+        offCtx.ellipse(
+          Math.round(player.state.x - camX),
+          Math.round(player.state.y + TUNING.PLAYER.HITBOX.OFFSET_Y - camY),
+          TUNING.PLAYER.HITBOX.RADIUS_X,
+          TUNING.PLAYER.HITBOX.RADIUS_Y,
+          0,
+          0,
+          Math.PI * 2
+        );
+        offCtx.stroke();
+
+        // Mango pet: Rose outline
+        offCtx.strokeStyle = 'rgba(244, 63, 94, 0.95)';
+        offCtx.beginPath();
+        offCtx.ellipse(
+          Math.round(mangoPetRef.current.x - camX),
+          Math.round(mangoPetRef.current.y - camY),
+          8,
+          5,
+          0,
+          0,
+          Math.PI * 2
+        );
+        offCtx.stroke();
+
+        // 2. Translucent Debug Metrics HUD
+        const panelX = 8;
+        const panelY = 8;
+        const panelW = 270;
+        const panelH = 74;
+        offCtx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        offCtx.fillRect(panelX, panelY, panelW, panelH);
+        offCtx.strokeStyle = '#22d3ee';
+        offCtx.strokeRect(panelX, panelY, panelW, panelH);
+
+        offCtx.font = '700 7px "Press Start 2P", monospace';
+        offCtx.fillStyle = '#fde047';
+        offCtx.fillText('[F3 DEBUG OVERLAY]', panelX + 8, panelY + 13);
+
+        offCtx.fillStyle = '#38bdf8';
+        const ms = (1000 / Math.max(1, fpsRef.current)).toFixed(1);
+        offCtx.fillText(`FPS: ${fpsRef.current.toFixed(1)} (${ms}ms) | 640x360`, panelX + 8, panelY + 27);
+
+        offCtx.fillStyle = '#a7f3d0';
+        offCtx.fillText(`Player: X:${player.state.x.toFixed(0)} Y:${player.state.y.toFixed(0)} | ${player.state.direction}`, panelX + 8, panelY + 41);
+
+        offCtx.fillStyle = '#e2e8f0';
+        offCtx.fillText(`Camera: X:${camX} Y:${camY}`, panelX + 8, panelY + 55);
+
+        offCtx.fillStyle = '#f472b6';
+        const entCount = buildings.length + npcManager.npcs.length + 2 + 34;
+        offCtx.fillText(`Entities: ${entCount} | Hitboxes: ACTIVE`, panelX + 8, panelY + 67);
+
+        offCtx.restore();
+      }
 
       // 8. Integer-Scale Offscreen Buffer to Window Canvas with Letterboxing
       const scaleX = canvas.width / viewW;

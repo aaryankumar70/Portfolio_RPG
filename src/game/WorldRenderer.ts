@@ -488,6 +488,10 @@ export class WorldRenderer {
     landmarkTrees.forEach(t => addTree(t.x, t.y, t.type));
   }
 
+  private isReducedMotion(): boolean {
+    return typeof window !== 'undefined' && Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+
   // Helper to render forest trees using assetManager with procedural fallback
   private drawForestTree(
     ctx: CanvasRenderingContext2D,
@@ -515,8 +519,8 @@ export class WorldRenderer {
       );
       ctx.fill();
 
-      // Natural wind sway on foliage (origin at base of trunk, phase-shifted by position)
-      const swayAngle = Math.sin(this.animTimer * 1.5 + x * 0.012 + y * 0.018) * 0.022;
+      // Natural wind sway on foliage (honoring prefers-reduced-motion)
+      const swayAngle = this.isReducedMotion() ? 0 : Math.sin(this.animTimer * 1.5 + x * 0.012 + y * 0.018) * 0.022;
       ctx.translate(rx, ry + 20);
       ctx.rotate(swayAngle);
       ctx.drawImage(img, -58, -110, 116, 116);
@@ -910,8 +914,8 @@ export class WorldRenderer {
             );
             c.fill();
 
-            // Natural wind sway on foliage
-            const swayAngle = Math.sin(this.animTimer * 1.5 + t.x * 0.012 + t.y * 0.018) * 0.022;
+            // Natural wind sway on foliage (honoring prefers-reduced-motion)
+            const swayAngle = this.isReducedMotion() ? 0 : Math.sin(this.animTimer * 1.5 + t.x * 0.012 + t.y * 0.018) * 0.022;
             c.translate(t.x - cameraX, t.y - cameraY + 20);
             c.rotate(swayAngle);
             c.drawImage(img, -58, -110, 116, 116);

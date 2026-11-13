@@ -6,6 +6,7 @@ import { IntroSequence } from './components/ui/IntroSequence';
 import { BUILDINGS, NPCS, INITIAL_QUESTS, ARYAN_STATS } from './data/portfolioData';
 import { BuildingData, TimeOfDay, Quest, NPC } from './types';
 import { soundManager } from './audio/SoundManager';
+import { PortfolioView } from './components/ui/PortfolioView';
 
 // Explorable Canvas RPG Interior Environment
 import { InteriorGameCanvas } from './components/interiors/InteriorGameCanvas';
@@ -33,6 +34,7 @@ export const App: React.FC = () => {
   const [quests, setQuests] = useState<Quest[]>(INITIAL_QUESTS);
   const [isSoundMuted, setIsSoundMuted] = useState<boolean>(false);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+  const [isPortfolioMode, setIsPortfolioMode] = useState<boolean>(false);
 
   // Gain XP & Level up mechanism
   const handleXpGain = useCallback((amount: number) => {
@@ -127,8 +129,22 @@ export const App: React.FC = () => {
     setIsSoundMuted(!enabled);
   };
 
+  if (isPortfolioMode) {
+    return <PortfolioView onReturnToGame={() => setIsPortfolioMode(false)} />;
+  }
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#090e17] font-sans">
+      {/* Prominent "Skip game: view projects and resume" toggle */}
+      <button
+        onClick={() => setIsPortfolioMode(true)}
+        className="fixed top-3.5 right-4 z-50 flex items-center gap-2 px-3 py-1.5 bg-[#0f172a]/95 hover:bg-[#1e293b] text-amber-300 hover:text-amber-200 border border-amber-500/60 rounded shadow-[0_4px_16px_rgba(0,0,0,0.7)] font-pixel text-[8px] transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
+        title="Switch to clean, fast, accessible portfolio and resume view"
+      >
+        <span>📄</span>
+        <span>SKIP GAME: RESUME & PROJECTS</span>
+      </button>
+
       {/* 1. CINEMATIC INTRO SEQUENCE (Section 3 of User Prompt) */}
       {!gameStarted && (
         <IntroSequence
