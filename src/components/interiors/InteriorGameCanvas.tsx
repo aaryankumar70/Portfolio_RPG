@@ -82,47 +82,6 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
     mangoPetRef.current.y = config.entrySpawn.y + 10;
   }, [config]);
 
-  // Smooth sliding collision resolution inside interior room
-  const resolveInteriorMovement = useCallback(
-    (currX: number, currY: number, targetX: number, targetY: number, radius = 12) => {
-      let resolvedX = targetX;
-      let resolvedY = targetY;
-
-      // Check collision boxes
-      const isColliding = (x: number, y: number) => {
-        for (const box of config.collisionBoxes) {
-          if (
-            x + radius > box.x &&
-            x - radius < box.x + box.w &&
-            y + radius > box.y &&
-            y - radius < box.y + box.h
-          ) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      // Direct move
-      if (!isColliding(targetX, targetY)) {
-        return { x: targetX, y: targetY };
-      }
-
-      // Slide X
-      if (!isColliding(targetX, currY)) {
-        return { x: targetX, y: currY };
-      }
-
-      // Slide Y
-      if (!isColliding(currX, targetY)) {
-        return { x: currX, y: targetY };
-      }
-
-      return { x: currX, y: currY };
-    },
-    [config.collisionBoxes]
-  );
-
   // Handle building exit with fade
   const triggerExit = useCallback(() => {
     soundManager.playEnterBuilding();
@@ -237,36 +196,10 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
       const renderer = rendererRef.current;
       const mango = mangoPetRef.current;
 
-      // 1. Player Physics & Movement (Paused during dialogue modal)
+      // 1. Player Physics & Movement (Shared unified collision with acceleration/corner forgiveness)
+      player.update(dt, keysRef.current, Boolean(modalType), config.collisionBoxes);
+
       if (!modalType) {
-        let dx = 0;
-        let dy = 0;
-        const keys = keysRef.current;
-        if (keys['KeyW'] || keys['ArrowUp']) dy -= 1;
-        if (keys['KeyS'] || keys['ArrowDown']) dy += 1;
-        if (keys['KeyA'] || keys['ArrowLeft']) dx -= 1;
-        if (keys['KeyD'] || keys['ArrowRight']) dx += 1;
-
-        if (dx !== 0 || dy !== 0) {
-          const len = Math.hypot(dx, dy);
-          const speed = keys['ShiftLeft'] || keys['ShiftRight'] ? 240 : 160;
-          const targetX = player.state.x + (dx / len) * speed * dt;
-          const targetY = player.state.y + (dy / len) * speed * dt;
-
-          const resolved = resolveInteriorMovement(player.state.x, player.state.y, targetX, targetY);
-          player.state.x = resolved.x;
-          player.state.y = resolved.y;
-          player.state.isMoving = true;
-
-          if (Math.abs(dx) > Math.abs(dy)) {
-            player.state.direction = dx > 0 ? 'right' : 'left';
-          } else {
-            player.state.direction = dy > 0 ? 'down' : 'up';
-          }
-        } else {
-          player.state.isMoving = false;
-        }
-
         // 2. Mango Follow AI inside room
         mango.update(dt, player.state.x, player.state.y, player.state.isMoving);
 
@@ -296,7 +229,7 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
 
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
-  }, [config, modalType, activeHotspotId, isNearExit, resolveInteriorMovement]);
+  }, [config, modalType, activeHotspotId, isNearExit]);
 
   // Click-to-move handling inside room
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {

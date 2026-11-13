@@ -1,5 +1,6 @@
 import { BUILDINGS } from '../data/portfolioData';
 import { CollisionBox } from '../types';
+import { TUNING } from './TUNING';
 
 export class CollisionSystem {
   public worldWidth = 2800;
@@ -63,60 +64,104 @@ export class CollisionSystem {
     return x >= (2520 + wave);
   }
 
-  // Checks if a point with radius collides with any solid obstacle
-  public isSolid(x: number, y: number, radius = 10): boolean {
-    // World boundary limits
-    if (x - radius < 60 || x + radius > this.worldWidth - 60) return true;
-    if (y - radius < 320 || y + radius > this.worldHeight - 60) return true;
+  // Checks if a foot capsule/ellipse collides with solid geometry or custom boxes
+  public isSolid(
+    x: number,
+    y: number,
+    radius = 10,
+    radiusY?: number,
+    customBoxes?: CollisionBox[]
+  ): boolean {
+    const rx = radius;
+    const ry = radiusY !== undefined ? radiusY : radius;
+    const boxes = customBoxes || this.solidBoxes;
 
-    // River collision
-    if (this.isRiverWater(x, y)) return true;
+    // Overworld boundary limits & environment
+    if (!customBoxes) {
+      if (x - rx < 60 || x + rx > this.worldWidth - 60) return true;
+      if (y - ry < 320 || y + ry > this.worldHeight - 60) return true;
+      if (this.isRiverWater(x, y)) return true;
+
+      // Tree trunks & fountain
+      for (const c of this.solidCircles) {
+        const dx = Math.abs(x - c.x);
+        const dy = Math.abs(y - c.y);
+        if (dx > c.r + rx || dy > c.r + ry) continue;
+        const normX = dx / (c.r + rx);
+        const normY = dy / (c.r + ry);
+        if (normX * normX + normY * normY <= 1.0) return true;
+      }
+    }
 
     // Building & box collisions
-    for (const box of this.solidBoxes) {
+    for (const box of boxes) {
       if (
-        x + radius > box.x &&
-        x - radius < box.x + box.w &&
-        y + radius > box.y &&
-        y - radius < box.y + box.h
+        x + rx > box.x &&
+        x - rx < box.x + box.w &&
+        y + ry > box.y &&
+        y - ry < box.y + box.h
       ) {
         return true;
       }
     }
 
-    // Tree trunks & fountain
-    for (const c of this.solidCircles) {
-      const dist = Math.hypot(x - c.x, y - c.y);
-      if (dist < c.r + radius) return true;
-    }
-
     return false;
   }
 
-  // Smooth sliding collision resolution (allows sliding along walls)
+  // Smooth sliding collision resolution with axis separation and corner forgiveness
   public resolveMovement(
     currX: number,
     currY: number,
     targetX: number,
     targetY: number,
-    radius = 10
+    radiusX: number = TUNING.PLAYER.HITBOX.RADIUS_X,
+    radiusY: number = TUNING.PLAYER.HITBOX.RADIUS_Y,
+    customBoxes?: CollisionBox[]
   ): { x: number; y: number } {
-    let newX = currX;
-    let newY = currY;
-
-    // Try full step first
-    if (!this.isSolid(targetX, targetY, radius)) {
+    // 1. Try full step first
+    if (!this.isSolid(targetX, targetY, radiusX, radiusY, customBoxes)) {
       return { x: targetX, y: targetY };
     }
 
-    // Try horizontal sliding step
-    if (!this.isSolid(targetX, currY, radius)) {
+    let newX = currX;
+    let newY = currY;
+
+    // 2. Try horizontal sliding step with corner forgiveness
+    if (!this.isSolid(targetX, currY, radiusX, radiusY, customBoxes)) {
       newX = targetX;
+    } else {
+      const cornerNudge = TUNING.PLAYER.CORNER_FORGIVENESS;
+      for (let offset = 1; offset <= cornerNudge; offset++) {
+        if (!this.isSolid(targetX, currY - offset, radiusX, radiusY, customBoxes)) {
+          newX = targetX;
+          newY = currY - offset * 0.35;
+          break;
+        }
+        if (!this.isSolid(targetX, currY + offset, radiusX, radiusY, customBoxes)) {
+          newX = targetX;
+          newY = currY + offset * 0.35;
+          break;
+        }
+      }
     }
 
-    // Try vertical sliding step
-    if (!this.isSolid(currX, targetY, radius)) {
+    // 3. Try vertical sliding step with corner forgiveness
+    if (!this.isSolid(newX, targetY, radiusX, radiusY, customBoxes)) {
       newY = targetY;
+    } else {
+      const cornerNudge = TUNING.PLAYER.CORNER_FORGIVENESS;
+      for (let offset = 1; offset <= cornerNudge; offset++) {
+        if (!this.isSolid(currX - offset, targetY, radiusX, radiusY, customBoxes)) {
+          newX = currX - offset * 0.35;
+          newY = targetY;
+          break;
+        }
+        if (!this.isSolid(currX + offset, targetY, radiusX, radiusY, customBoxes)) {
+          newX = currX + offset * 0.35;
+          newY = targetY;
+          break;
+        }
+      }
     }
 
     return { x: newX, y: newY };

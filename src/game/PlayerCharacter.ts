@@ -1,16 +1,17 @@
-import { PlayerState, PlayerAnimState } from '../types';
+import { PlayerState, PlayerAnimState, CollisionBox } from '../types';
 import { soundManager } from '../audio/SoundManager';
 import { pixelAssets } from './PixelArtAssets';
 import { collisionSystem } from './CollisionSystem';
+import { TUNING } from './TUNING';
 
 export class PlayerCharacter {
   public state: PlayerState = {
     x: 1200,
-    y: 1015, // Standing directly in front of the Town Square fountain, matching reference screenshot!
+    y: 1015,
     direction: 'down',
     animState: 'idle',
     isMoving: false,
-    speed: 180, // pixels per second (delta-time based!)
+    speed: TUNING.PLAYER.WALK_SPEED,
     level: 18,
     xp: 1280,
     maxHp: 100,
@@ -19,30 +20,34 @@ export class PlayerCharacter {
     path: []
   };
 
+  public vx = 0;
+  public vy = 0;
   private walkAnimTimer = 0;
   private idleAnimTimer = 0;
   private footstepTimer = 0;
   public isRunning = false;
   private ghostTrail: Array<{ x: number; y: number; dir: 'down' | 'up' | 'left' | 'right'; frame: number; alpha: number }> = [];
 
-  // Delta-time based update loop
+  // Delta-time based update loop with acceleration and friction curves
   public update(
-    dt: number, // Delta time in seconds (e.g. 0.016 for 60fps)
+    dt: number,
     keys: { [key: string]: boolean },
-    isInteracting: boolean
+    isInteracting: boolean,
+    customBoxes?: CollisionBox[]
   ) {
     if (isInteracting) {
+      this.vx = 0;
+      this.vy = 0;
       this.state.isMoving = false;
       this.state.animState = 'interacting';
       return;
     }
 
-    let dx = 0;
-    let dy = 0;
+    let inputX = 0;
+    let inputY = 0;
 
     // Check Run / Sprint modifier (Shift)
     this.isRunning = Boolean(keys['ShiftLeft'] || keys['ShiftRight']);
-    const moveSpeed = this.isRunning ? 270 : 180; // px/sec
 
     // 1. Keyboard Inputs
     const keyUp = keys['KeyW'] || keys['ArrowUp'];
@@ -50,13 +55,13 @@ export class PlayerCharacter {
     const keyLeft = keys['KeyA'] || keys['ArrowLeft'];
     const keyRight = keys['KeyD'] || keys['ArrowRight'];
 
-    if (keyUp) dy -= 1;
-    if (keyDown) dy += 1;
-    if (keyLeft) dx -= 1;
-    if (keyRight) dx += 1;
+    if (keyUp) inputY -= 1;
+    if (keyDown) inputY += 1;
+    if (keyLeft) inputX -= 1;
+    if (keyRight) inputX += 1;
 
     // If keyboard is pressed, immediately cancel any click-to-move path
-    if (dx !== 0 || dy !== 0) {
+    if (inputX !== 0 || inputY !== 0) {
       this.state.path = [];
       this.state.targetX = undefined;
       this.state.targetY = undefined;
@@ -70,74 +75,110 @@ export class PlayerCharacter {
       if (dist < 8) {
         this.state.path.shift();
       } else {
-        dx = diffX / dist;
-        dy = diffY / dist;
+        inputX = diffX / dist;
+        inputY = diffY / dist;
       }
     }
 
-    // Process Movement
-    if (dx !== 0 || dy !== 0) {
-      const len = Math.hypot(dx, dy);
-      const nx = dx / len;
-      const ny = dy / len;
+    // Normalize diagonal input
+    const inputLen = Math.hypot(inputX, inputY);
+    let dirX = 0;
+    let dirY = 0;
+    if (inputLen > 0) {
+      dirX = inputX / inputLen;
+      dirY = inputY / inputLen;
+    }
 
-      const stepDist = moveSpeed * dt;
-      const targetX = this.state.x + nx * stepDist;
-      const targetY = this.state.y + ny * stepDist;
+    // Target velocity with smooth acceleration & friction
+    const targetSpeed = inputLen > 0
+      ? (this.isRunning ? TUNING.PLAYER.RUN_SPEED : TUNING.PLAYER.WALK_SPEED)
+      : 0;
 
-      // Solid Collision Resolution with Wall Sliding
-      const resolved = collisionSystem.resolveMovement(
-        this.state.x,
-        this.state.y,
-        targetX,
-        targetY,
-        12 // player radius
-      );
+    const targetVx = dirX * targetSpeed;
+    const targetVy = dirY * targetSpeed;
 
-      // Check if actual movement occurred
-      const movedX = resolved.x - this.state.x;
-      const movedY = resolved.y - this.state.y;
+    const accelTime = this.isRunning ? TUNING.PLAYER.RUN_ACCEL_TIME : TUNING.PLAYER.ACCEL_TIME;
+    const decelTime = this.isRunning ? TUNING.PLAYER.RUN_DECEL_TIME : TUNING.PLAYER.DECEL_TIME;
 
-      this.state.x = resolved.x;
-      this.state.y = resolved.y;
-      this.state.isMoving = Math.hypot(movedX, movedY) > 0.05;
+    const rateX = inputX !== 0 ? (TUNING.PLAYER.RUN_SPEED / accelTime) : (TUNING.PLAYER.RUN_SPEED / decelTime);
+    const rateY = inputY !== 0 ? (TUNING.PLAYER.RUN_SPEED / accelTime) : (TUNING.PLAYER.RUN_SPEED / decelTime);
 
-      // Update Facing Direction
-      if (Math.abs(dx) > Math.abs(dy)) {
-        this.state.direction = dx > 0 ? 'right' : 'left';
-      } else {
-        this.state.direction = dy > 0 ? 'down' : 'up';
+    const approach = (curr: number, target: number, rate: number) => {
+      const diff = target - curr;
+      const step = rate * dt;
+      if (Math.abs(diff) <= step) return target;
+      return curr + Math.sign(diff) * step;
+    };
+
+    this.vx = approach(this.vx, targetVx, rateX);
+    this.vy = approach(this.vy, targetVy, rateY);
+
+    const actualSpeed = Math.hypot(this.vx, this.vy);
+
+    // Wide shallow foot hitbox offset (allows head/shoulders to overlap buildings/trees)
+    const footOffsetY = TUNING.PLAYER.HITBOX.OFFSET_Y;
+    const currFootX = this.state.x;
+    const currFootY = this.state.y + footOffsetY;
+    const targetFootX = currFootX + this.vx * dt;
+    const targetFootY = currFootY + this.vy * dt;
+
+    const resolvedFeet = collisionSystem.resolveMovement(
+      currFootX,
+      currFootY,
+      targetFootX,
+      targetFootY,
+      TUNING.PLAYER.HITBOX.RADIUS_X,
+      TUNING.PLAYER.HITBOX.RADIUS_Y,
+      customBoxes
+    );
+
+    // Stop velocity on blocked axis
+    if (Math.abs(resolvedFeet.x - targetFootX) > 0.05) this.vx = 0;
+    if (Math.abs(resolvedFeet.y - targetFootY) > 0.05) this.vy = 0;
+
+    this.state.x = resolvedFeet.x;
+    this.state.y = resolvedFeet.y - footOffsetY;
+
+    this.state.isMoving = actualSpeed > 6.0;
+
+    // Process Movement Animation & Footsteps tied to actual velocity
+    if (this.state.isMoving) {
+      if (Math.abs(this.vx) > Math.abs(this.vy)) {
+        this.state.direction = this.vx > 0 ? 'right' : 'left';
+      } else if (Math.abs(this.vy) > 0.01) {
+        this.state.direction = this.vy > 0 ? 'down' : 'up';
       }
 
-      this.state.animState = this.isRunning ? 'running' : 'walking';
+      this.state.animState = this.isRunning && actualSpeed > TUNING.PLAYER.WALK_SPEED ? 'running' : 'walking';
 
-      // Animation step cadence
-      const animRate = this.isRunning ? 12 : 8; // frames/sec
+      const animRate = this.isRunning ? 12 : 8;
       this.walkAnimTimer += dt * animRate;
 
       // Hyper Light Drifter Ghost Dash / Movement Trail
-      if (Math.random() < (this.isRunning ? 0.7 : 0.35)) {
+      if (this.isRunning && Math.random() < 0.6) {
         this.ghostTrail.unshift({
           x: this.state.x,
           y: this.state.y,
           dir: this.state.direction,
           frame: Math.floor(this.walkAnimTimer),
-          alpha: this.isRunning ? 0.55 : 0.3
+          alpha: 0.45
         });
         if (this.ghostTrail.length > 5) this.ghostTrail.pop();
       }
 
-      // Footstep sound timing
+      // Footstep sound timing tied to actual speed
       this.footstepTimer += dt;
-      const stepCadence = this.isRunning ? 0.22 : 0.32; // seconds
+      const stepCadence = this.isRunning
+        ? TUNING.PLAYER.FOOTSTEP_INTERVAL_RUN
+        : TUNING.PLAYER.FOOTSTEP_INTERVAL_WALK;
+
       if (this.footstepTimer >= stepCadence) {
         this.footstepTimer = 0;
         soundManager.playFootstep();
       }
     } else {
-      this.state.isMoving = false;
       this.state.animState = 'idle';
-      this.idleAnimTimer += dt * 4.5; // ~220ms per idle frame (matching animations.json)
+      this.idleAnimTimer += dt * 4.5;
       this.footstepTimer = 0;
     }
 
