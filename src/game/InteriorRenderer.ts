@@ -334,12 +334,9 @@ export class InteriorRenderer {
   private drawLightingAndParticles(ctx: CanvasRenderingContext2D, config: InteriorConfig) {
     const { roomWidth: rw, roomHeight: rh } = config;
 
-    // Ambient Darkness Vignette
-    const vignette = ctx.createRadialGradient(rw / 2, rh / 2, 200, rw / 2, rh / 2, rw * 0.7);
-    vignette.addColorStop(0, 'transparent');
-    vignette.addColorStop(1, 'rgba(11, 8, 5, 0.45)');
-    ctx.fillStyle = vignette;
-    ctx.fillRect(0, 0, rw, rh);
+    // Ambient Darkness Vignette (Cached)
+    const vignetteCanvas = assetManager.getVignette(rw, rh);
+    ctx.drawImage(vignetteCanvas, 0, 0);
 
     // Warm Hanging Lanterns
     const lanterns = [
@@ -347,24 +344,19 @@ export class InteriorRenderer {
       { x: 600, y: 150 }
     ];
 
+    const glowImg = assetManager.getLanternGlow();
+
     lanterns.forEach((lp) => {
       // Chain
       ctx.fillStyle = '#1c1917';
-      ctx.fillRect(lp.x - 1, 0, 2, lp.y);
+      ctx.fillRect(Math.round(lp.x - 1), 0, 2, lp.y);
       // Brass Lantern fixture
       ctx.fillStyle = '#d97706';
-      ctx.fillRect(lp.x - 8, lp.y, 16, 18);
+      ctx.fillRect(Math.round(lp.x - 8), lp.y, 16, 18);
       ctx.fillStyle = '#fde047';
-      ctx.fillRect(lp.x - 5, lp.y + 3, 10, 12);
-      // Soft radial amber halo
-      const glow = ctx.createRadialGradient(lp.x, lp.y + 8, 2, lp.x, lp.y + 8, 50);
-      glow.addColorStop(0, 'rgba(251, 191, 36, 0.35)');
-      glow.addColorStop(0.6, 'rgba(245, 158, 11, 0.12)');
-      glow.addColorStop(1, 'transparent');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(lp.x, lp.y + 8, 50, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(Math.round(lp.x - 5), lp.y + 3, 10, 12);
+      // Soft radial amber halo (Cached texture)
+      ctx.drawImage(glowImg, Math.round(lp.x - 44), Math.round(lp.y + 8 - 44));
     });
   }
 

@@ -6,6 +6,7 @@ import { ParticleSystem } from './particles';
 import { NPCManager } from './NPCManager';
 import { soundManager } from '../audio/SoundManager';
 import { MangoPet } from './MangoPet';
+import { TUNING } from './TUNING';
 
 interface GameCanvasProps {
   buildings: BuildingData[];
@@ -30,6 +31,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   activeBuildingModal
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const offscreenRef = useRef<HTMLCanvasElement | null>(null);
+  const viewportRef = useRef<{ scale: number; destX: number; destY: number }>({ scale: 1, destX: 0, destY: 0 });
+
   const rendererRef = useRef<WorldRenderer>(new WorldRenderer());
   const playerRef = useRef<PlayerCharacter>(new PlayerCharacter());
   const npcManagerRef = useRef<NPCManager>(new NPCManager(npcs));
@@ -42,14 +46,27 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const activeNearBuildingRef = useRef<BuildingData | null>(null);
   const activeNearNPCRef = useRef<NPC | null>(null);
 
-  // Resize handling
+  // Initialize offscreen low-res rendering canvas (640x360 pixel art buffer)
+  useEffect(() => {
+    if (!offscreenRef.current) {
+      const off = document.createElement('canvas');
+      off.width = TUNING.RENDER.INTERNAL_WIDTH;
+      off.height = TUNING.RENDER.INTERNAL_HEIGHT;
+      const oCtx = off.getContext('2d');
+      if (oCtx) oCtx.imageSmoothingEnabled = false;
+      offscreenRef.current = off;
+    }
+  }, []);
+
+  // Resize handling with devicePixelRatio & integer scaling
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(window.innerWidth * dpr);
+      canvas.height = Math.floor(window.innerHeight * dpr);
     };
 
     handleResize();
@@ -105,18 +122,33 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     };
   }, [onEnterBuilding, activeBuildingModal]);
 
-  // Click-to-move handling via A* Pathfinding
+  // Click-to-move handling via A* Pathfinding (Scaled through pixel viewport)
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     soundManager.startAmbient();
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const clickScreenX = e.clientX - rect.left;
-    const clickScreenY = e.clientY - rect.top;
+    const dpr = window.devicePixelRatio || 1;
+    const canvasPxX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const canvasPxY = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-    const worldTargetX = clickScreenX + cameraRef.current.x;
-    const worldTargetY = clickScreenY + cameraRef.current.y;
+    const { scale, destX, destY } = viewportRef.current;
+    const internalX = Math.floor((canvasPxX - destX) / scale);
+    const internalY = Math.floor((canvasPxY - destY) / scale);
+
+    // Ignore clicks on letterbox borders
+    if (
+      internalX < 0 ||
+      internalX >= TUNING.RENDER.INTERNAL_WIDTH ||
+      internalY < 0 ||
+      internalY >= TUNING.RENDER.INTERNAL_HEIGHT
+    ) {
+      return;
+    }
+
+    const worldTargetX = internalX + Math.round(cameraRef.current.x);
+    const worldTargetY = internalY + Math.round(cameraRef.current.y);
 
     // Direct Mango pet interaction check (Mango meows and stretches!)
     const distToMango = Math.hypot(worldTargetX - mangoPetRef.current.x, worldTargetY - mangoPetRef.current.y);
@@ -146,19 +178,25 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     const loop = () => {
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      const offscreen = offscreenRef.current;
+      if (!canvas || !offscreen) return;
+
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      const offCtx = offscreen.getContext('2d');
+      if (!ctx || !offCtx) return;
 
       // Delta Time calculation (seconds)
       const now = performance.now();
-      const dt = Math.min(0.08, (now - lastTimeRef.current) / 1000);
+      const dt = Math.min(TUNING.RENDER.MAX_DELTA_TIME, (now - lastTimeRef.current) / 1000);
       lastTimeRef.current = now;
 
       const player = playerRef.current;
       const renderer = rendererRef.current;
       const npcManager = npcManagerRef.current;
       const particles = particlesRef.current;
+
+      const viewW = TUNING.RENDER.INTERNAL_WIDTH;
+      const viewH = TUNING.RENDER.INTERNAL_HEIGHT;
 
       // 1. Update Player Physics & Collisions (Delta Time based)
       const isPaused = activeBuildingModal !== null;
@@ -170,22 +208,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // 2b. Update Mango Pet Companion (Delta-Time follow AI & animations)
       mangoPetRef.current.update(dt, player.state.x, player.state.y, player.state.isMoving);
 
-      // 3. Camera smoothing tracking player
-      const targetCamX = player.state.x - canvas.width / 2;
-      const targetCamY = player.state.y - canvas.height / 2;
+      // 3. Camera follow (Exponential decay, frame-rate independent)
+      const targetCamX = player.state.x - viewW / 2;
+      const targetCamY = player.state.y - viewH / 2;
 
-      const maxCamX = Math.max(0, renderer.worldWidth - canvas.width);
-      const maxCamY = Math.max(0, renderer.worldHeight - canvas.height);
+      const maxCamX = Math.max(0, renderer.worldWidth - viewW);
+      const maxCamY = Math.max(0, renderer.worldHeight - viewH);
       const clampedTargetX = Math.max(0, Math.min(maxCamX, targetCamX));
       const clampedTargetY = Math.max(0, Math.min(maxCamY, targetCamY));
 
-      // Delta-time smoothed camera lerp
-      const cameraLerpSpeed = 6.0; // factor
-      cameraRef.current.x += (clampedTargetX - cameraRef.current.x) * (cameraLerpSpeed * dt);
-      cameraRef.current.y += (clampedTargetY - cameraRef.current.y) * (cameraLerpSpeed * dt);
+      const camDecay = 1 - Math.exp(-TUNING.CAMERA.DAMPING * dt);
+      cameraRef.current.x += (clampedTargetX - cameraRef.current.x) * camDecay;
+      cameraRef.current.y += (clampedTargetY - cameraRef.current.y) * camDecay;
 
-      const camX = cameraRef.current.x;
-      const camY = cameraRef.current.y;
+      // Snap camera to whole pixels
+      const camX = Math.round(cameraRef.current.x);
+      const camY = Math.round(cameraRef.current.y);
 
       // 4. Proximity detection to buildings
       let closestBuilding: BuildingData | null = null;
@@ -222,18 +260,34 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // 6. Update Particle System
       particles.update(renderer.worldWidth, renderer.worldHeight, timeOfDay);
 
-      // 7. Render Frame with Crisp Nearest-Neighbor Scaling
-      ctx.imageSmoothingEnabled = false;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // 7. Render Low-Res Frame to Offscreen Pixel-Art Canvas (640x360)
+      offCtx.imageSmoothingEnabled = false;
+      offCtx.clearRect(0, 0, viewW, viewH);
 
-      // Render Layered & Y-Sorted Town Scene (Player, NPCs, Mango, Trees, Buildings sorted by depth!)
-      renderer.render(ctx, camX, camY, timeOfDay, buildings, npcManager, player, mangoPetRef.current);
+      // Render Layered & Y-Sorted Town Scene
+      renderer.render(offCtx, camX, camY, timeOfDay, buildings, npcManager, player, mangoPetRef.current);
 
       // Foreground Particles
-      particles.render(ctx, camX, camY);
+      particles.render(offCtx, camX, camY);
 
       // Day / Night Lighting Shader
-      renderer.renderLightingShader(ctx, camX, camY, timeOfDay);
+      renderer.renderLightingShader(offCtx, camX, camY, timeOfDay);
+
+      // 8. Integer-Scale Offscreen Buffer to Window Canvas with Letterboxing
+      const scaleX = canvas.width / viewW;
+      const scaleY = canvas.height / viewH;
+      const integerScale = Math.max(1, Math.floor(Math.min(scaleX, scaleY)));
+      const destW = viewW * integerScale;
+      const destH = viewH * integerScale;
+      const destX = Math.floor((canvas.width - destW) / 2);
+      const destY = Math.floor((canvas.height - destH) / 2);
+
+      viewportRef.current = { scale: integerScale, destX, destY };
+
+      ctx.imageSmoothingEnabled = false;
+      ctx.fillStyle = '#090e17';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(offscreen, 0, 0, viewW, viewH, destX, destY, destW, destH);
 
       animId = requestAnimationFrame(loop);
     };

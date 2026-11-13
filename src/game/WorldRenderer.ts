@@ -57,13 +57,10 @@ export class WorldRenderer {
     // 3. Eastern River with Bridge
     this.drawRiver(ctx, cameraX, cameraY);
 
-    // 4. Perimeter Tree Groves
-    this.drawPerimeterTrees(ctx, cameraX, cameraY);
-
-    // 5. Birds in the Sky
+    // 4. Birds in the Sky
     this.drawBirds(ctx, cameraX, cameraY);
 
-    // 6. Y-Sorted Entities (Buildings, Fountain, NPCs, Mango, Player, Foliage)
+    // 5. Y-Sorted Entities (Buildings, Trees, Fountain, NPCs, Mango, Player, Foliage)
     this.drawYSortedEntities(ctx, cameraX, cameraY, timeOfDay, buildings, npcManager, player, mangoPet);
   }
 
@@ -413,41 +410,56 @@ export class WorldRenderer {
     ctx.restore();
   }
 
-  // 4. Perimeter Dense Ancient Forest Enclosing All 4 Borders of the World
-  private drawPerimeterTrees(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number) {
-    ctx.save();
+  // 4. Perimeter & Grove Trees Integrated into Unified Y-Depth Sorting
+  private addTreesToDepthList(depthList: DepthObject[], cameraX: number, cameraY: number) {
+    const addTree = (tx: number, ty: number, type: 'oak' | 'pine' | 'autumn' | 'cherry') => {
+      // Tree foot baseline is ty + 20
+      depthList.push({
+        y: ty + 20,
+        render: (c) => this.drawForestTree(c, tx - cameraX, ty - cameraY, type)
+      });
+    };
 
     // A. North Border Forest (Y: 280 - 420)
     for (let tx = 80; tx < this.worldWidth - 200; tx += 110) {
       const type = tx % 330 === 0 ? 'pine' : tx % 220 === 0 ? 'autumn' : 'oak';
-      this.drawForestTree(ctx, tx - cameraX, 330 - cameraY, type);
+      addTree(tx, 330, type);
       if (tx % 2 === 0) {
-        this.drawForestTree(ctx, tx + 55 - cameraX, 390 - cameraY, 'pine');
+        addTree(tx + 55, 390, 'pine');
       }
     }
 
     // B. West Border Forest (X: 80 - 420)
     for (let ty = 340; ty < this.worldHeight - 100; ty += 110) {
       const type = ty % 330 === 0 ? 'pine' : ty % 220 === 0 ? 'autumn' : 'oak';
-      this.drawForestTree(ctx, 330 - cameraX, ty - cameraY, type);
-      this.drawForestTree(ctx, 230 - cameraX, ty + 50 - cameraY, 'pine');
-      this.drawForestTree(ctx, 130 - cameraX, ty + 20 - cameraY, 'oak');
+      addTree(330, ty, type);
+      addTree(230, ty + 50, 'pine');
+      addTree(130, ty + 20, 'oak');
     }
 
     // C. South Border Forest (Y: 1960 - 2200)
     for (let tx = 80; tx < this.worldWidth - 200; tx += 110) {
       const type = tx % 330 === 0 ? 'pine' : tx % 220 === 0 ? 'autumn' : 'oak';
-      this.drawForestTree(ctx, tx - cameraX, 2040 - cameraY, type);
-      this.drawForestTree(ctx, tx + 55 - cameraX, 2130 - cameraY, 'pine');
+      addTree(tx, 2040, type);
+      addTree(tx + 55, 2130, 'pine');
     }
 
     // D. East Border Forest (X: 2660 - 2800 framing river)
     for (let ty = 100; ty < this.worldHeight; ty += 120) {
-      this.drawForestTree(ctx, 2690 - cameraX, ty - cameraY, 'pine');
-      this.drawForestTree(ctx, 2760 - cameraX, ty + 60 - cameraY, 'oak');
+      addTree(2690, ty, 'pine');
+      addTree(2760, ty + 60, 'oak');
     }
 
-    ctx.restore();
+    // E. Central Landmark Trees
+    const landmarkTrees = [
+      { x: 920, y: 720, type: 'oak' as const },
+      { x: 1480, y: 720, type: 'oak' as const },
+      { x: 920, y: 1240, type: 'autumn' as const },
+      { x: 1480, y: 1240, type: 'oak' as const },
+      { x: 2020, y: 880, type: 'pine' as const },
+      { x: 2020, y: 1360, type: 'pine' as const }
+    ];
+    landmarkTrees.forEach(t => addTree(t.x, t.y, t.type));
   }
 
   // Helper to render forest trees using assetManager with procedural fallback
@@ -457,6 +469,8 @@ export class WorldRenderer {
     y: number,
     type: 'oak' | 'pine' | 'autumn' | 'cherry'
   ) {
+    const rx = Math.round(x);
+    const ry = Math.round(y);
     const imgPath = `/assets/environment/tree_${type}.png`;
     const img = assetManager.getImage(imgPath);
     if (img) {
@@ -464,15 +478,15 @@ export class WorldRenderer {
       ctx.imageSmoothingEnabled = false;
       ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
       ctx.beginPath();
-      ctx.ellipse(x, y + 20, 36, 12, 0, 0, Math.PI * 2);
+      ctx.ellipse(rx, ry + 20, 36, 12, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.drawImage(img, x - 58, y - 90, 116, 116);
+      ctx.drawImage(img, rx - 58, ry - 90, 116, 116);
       ctx.restore();
     } else {
       if (type === 'pine') {
-        this.drawPineTree(ctx, x, y, 40);
+        this.drawPineTree(ctx, rx, ry, 40);
       } else {
-        this.drawOakTree(ctx, x, y, 44);
+        this.drawOakTree(ctx, rx, ry, 44);
       }
     }
   }
@@ -504,8 +518,8 @@ export class WorldRenderer {
 
     // 1. Buildings (Production Assets with Procedural Fallbacks)
     buildings.forEach((b) => {
-      const bx = Math.floor(b.x - cameraX);
-      const by = Math.floor(b.y - cameraY);
+      const bx = Math.round(b.x - cameraX);
+      const by = Math.round(b.y - cameraY);
       const baseY = b.y + b.height;
 
       depthList.push({
@@ -519,9 +533,9 @@ export class WorldRenderer {
 
           if (img) {
             const destW = Math.max(b.width, 240);
-            const destH = Math.floor(destW * (img.naturalHeight / img.naturalWidth));
-            const destX = Math.floor(bx + (b.width - destW) / 2);
-            const destY = Math.floor(by + b.height - destH);
+            const destH = Math.round(destW * (img.naturalHeight / img.naturalWidth));
+            const destX = Math.round(bx + (b.width - destW) / 2);
+            const destY = Math.round(by + b.height - destH);
             roofTopY = destY;
 
             // Ground contact shadow
@@ -581,7 +595,7 @@ export class WorldRenderer {
       render: (c) => this.drawTownSquareFountain(c, 1200 - cameraX, 960 - cameraY)
     });
 
-    // 3. Street Lanterns & Lamp Posts with Warm Radial Amber Light Glow
+    // 3. Street Lanterns & Lamp Posts with Warm Amber Light Glow (Cached)
     const lanterns = [
       { x: 1080, y: 860 },
       { x: 1320, y: 860 },
@@ -593,38 +607,25 @@ export class WorldRenderer {
       { x: 1840, y: 1580 },
       { x: 2160, y: 1100 }
     ];
+    const lanternGlow = assetManager.getLanternGlow();
     lanterns.forEach((lp) => {
       depthList.push({
         y: lp.y + 4,
         render: (c) => {
           c.save();
-          // Warm radial amber lantern glow
-          const glow = c.createRadialGradient(
-            lp.x - cameraX,
-            lp.y - cameraY - 40,
-            2,
-            lp.x - cameraX,
-            lp.y - cameraY - 40,
-            38
-          );
-          glow.addColorStop(0, 'rgba(251, 191, 36, 0.4)');
-          glow.addColorStop(0.5, 'rgba(245, 158, 11, 0.15)');
-          glow.addColorStop(1, 'transparent');
-          c.fillStyle = glow;
-          c.beginPath();
-          c.arc(lp.x - cameraX, lp.y - cameraY - 40, 38, 0, Math.PI * 2);
-          c.fill();
+          // Warm radial amber lantern glow from cached offscreen canvas
+          c.drawImage(lanternGlow, Math.round(lp.x - cameraX - 44), Math.round(lp.y - cameraY - 40 - 44));
 
           const lampImg = assetManager.getImage('/assets/environment/lamp_post.png');
           if (lampImg) {
             c.imageSmoothingEnabled = false;
             c.fillStyle = 'rgba(15, 23, 42, 0.4)';
             c.beginPath();
-            c.ellipse(lp.x - cameraX, lp.y - cameraY + 2, 8, 4, 0, 0, Math.PI * 2);
+            c.ellipse(Math.round(lp.x - cameraX), Math.round(lp.y - cameraY + 2), 8, 4, 0, 0, Math.PI * 2);
             c.fill();
-            c.drawImage(lampImg, lp.x - cameraX - 16, lp.y - cameraY - 58, 32, 64);
+            c.drawImage(lampImg, Math.round(lp.x - cameraX - 16), Math.round(lp.y - cameraY - 58), 32, 64);
           } else {
-            pixelAssets.drawPixelLantern(c, lp.x - cameraX, lp.y - cameraY, false);
+            pixelAssets.drawPixelLantern(c, Math.round(lp.x - cameraX), Math.round(lp.y - cameraY), false);
           }
           c.restore();
         }
@@ -714,36 +715,25 @@ export class WorldRenderer {
       { x: 1730, y: 690, scale: 28 },
       { x: 1960, y: 680, scale: 32 }
     ];
+    const crystalGlow = assetManager.getCrystalGlow();
     crystals.forEach((cr) => {
       depthList.push({
         y: cr.y + 10,
         render: (c) => {
           c.save();
-          // Arcane cyan pulse glow
-          const pulse = Math.sin(this.animTimer * 4 + cr.x) * 4;
-          const cGlow = c.createRadialGradient(
-            cr.x - cameraX,
-            cr.y - cameraY - 10,
-            2,
-            cr.x - cameraX,
-            cr.y - cameraY - 10,
-            24 + pulse
-          );
-          cGlow.addColorStop(0, 'rgba(56, 189, 248, 0.45)');
-          cGlow.addColorStop(0.6, 'rgba(14, 165, 233, 0.15)');
-          cGlow.addColorStop(1, 'transparent');
-          c.fillStyle = cGlow;
-          c.beginPath();
-          c.arc(cr.x - cameraX, cr.y - cameraY - 10, 24 + pulse, 0, Math.PI * 2);
-          c.fill();
+          // Arcane cyan pulse glow from cached texture
+          const pulse = Math.sin(this.animTimer * 4 + cr.x) * 0.15;
+          c.globalAlpha = 0.85 + pulse;
+          c.drawImage(crystalGlow, Math.round(cr.x - cameraX - 40), Math.round(cr.y - cameraY - 10 - 40));
+          c.globalAlpha = 1.0;
 
           const crysImg = assetManager.getImage('/assets/environment/crystal_blue.png');
           if (crysImg) {
             c.imageSmoothingEnabled = false;
-            c.drawImage(crysImg, cr.x - cameraX - cr.scale / 2, cr.y - cameraY - cr.scale, cr.scale, cr.scale);
+            c.drawImage(crysImg, Math.round(cr.x - cameraX - cr.scale / 2), Math.round(cr.y - cameraY - cr.scale), cr.scale, cr.scale);
           } else {
             c.fillStyle = '#38bdf8';
-            c.fillRect(cr.x - cameraX - 4, cr.y - cameraY - 16, 8, 16);
+            c.fillRect(Math.round(cr.x - cameraX - 4), Math.round(cr.y - cameraY - 16), 8, 16);
           }
           c.restore();
         }
@@ -817,29 +807,32 @@ export class WorldRenderer {
       });
     });
 
-    // 7. NPCs (Production Idle Spritesheets)
+    // 8. Perimeter & Ancient Forest Trees (Unified Depth Sorting)
+    this.addTreesToDepthList(depthList, cameraX, cameraY);
+
+    // 9. NPCs (Production Idle Spritesheets)
     npcManager.npcs.forEach((npc) => {
       depthList.push({
-        y: npc.y,
+        y: npc.y + 20,
         render: (c) => npcManager.renderNPC(c, npc, cameraX, cameraY, this.animTimer)
       });
     });
 
-    // 8. Mango the Cat Pet Companion (Autonomous Follow AI & Animations)
+    // 10. Mango the Cat Pet Companion (Autonomous Follow AI & Animations)
     if (mangoPet) {
       depthList.push({
-        y: mangoPet.y,
+        y: mangoPet.y + 12,
         render: (c) => mangoPet.render(c, cameraX, cameraY)
       });
     }
 
-    // 9. Player Character (Aryan - 4-Direction Walk / Idle Cycles)
+    // 11. Player Character (Aryan - 4-Direction Walk / Idle Cycles)
     depthList.push({
-      y: player.state.y,
+      y: player.state.y + 20,
       render: (c) => player.render(c, cameraX, cameraY)
     });
 
-    // Sort all entities by base Y (depth-sorting)
+    // Sort all entities by baseline foot Y (depth-sorting)
     depthList.sort((a, b) => a.y - b.y);
 
     depthList.forEach((item) => item.render(ctx));

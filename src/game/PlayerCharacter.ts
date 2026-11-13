@@ -162,15 +162,15 @@ export class PlayerCharacter {
     this.ghostTrail.forEach((ghost) => {
       ctx.save();
       ctx.globalAlpha = ghost.alpha;
-      const gx = Math.floor(ghost.x - cameraX);
-      const gy = Math.floor(ghost.y - cameraY);
+      const gx = Math.round(ghost.x - cameraX);
+      const gy = Math.round(ghost.y - cameraY);
       pixelAssets.drawPlayerSprite(ctx, gx, gy, ghost.dir, ghost.frame, false);
       ctx.restore();
     });
 
-    // 2. Render Main Player Sprite
-    const px = Math.floor(this.state.x - cameraX);
-    const py = Math.floor(this.state.y - cameraY);
+    // 2. Render Main Player Sprite (Pixel Snapped)
+    const px = Math.round(this.state.x - cameraX);
+    const py = Math.round(this.state.y - cameraY);
 
     const frame = Math.floor(this.state.isMoving ? this.walkAnimTimer : this.idleAnimTimer);
     pixelAssets.drawPlayerSprite(ctx, px, py, this.state.direction, frame, this.state.isMoving);

@@ -85,8 +85,8 @@ export class NPCManager {
   }
 
   public renderNPC(ctx: CanvasRenderingContext2D, npc: NPC, cameraX: number, cameraY: number, animTime: number) {
-    const nx = Math.floor(npc.x - cameraX);
-    const ny = Math.floor(npc.y - cameraY);
+    const nx = Math.round(npc.x - cameraX);
+    const ny = Math.round(npc.y - cameraY);
 
     const spritePath = NPCManager.NPC_SPRITE_MAP[npc.id];
     const img = spritePath ? assetManager.getImage(spritePath) : null;

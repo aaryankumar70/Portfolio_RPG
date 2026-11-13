@@ -144,8 +144,8 @@ export class MangoPet {
 
   // Render Mango on Canvas (Sorted with World Objects)
   public render(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number) {
-    const screenX = Math.floor(this.x - cameraX);
-    const screenY = Math.floor(this.y - cameraY);
+    const screenX = Math.round(this.x - cameraX);
+    const screenY = Math.round(this.y - cameraY);
 
     const img = assetManager.getImage('/assets/characters/mango/mango_spritesheet.png');
     const scale = 1.6;

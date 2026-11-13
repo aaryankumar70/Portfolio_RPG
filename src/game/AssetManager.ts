@@ -4,6 +4,7 @@
 export class AssetManager {
   private images: Map<string, HTMLImageElement> = new Map();
   private loadPromises: Map<string, Promise<HTMLImageElement>> = new Map();
+  private canvasCache: Map<string, HTMLCanvasElement> = new Map();
   public isLoaded: boolean = false;
   public totalAssets: number = 0;
   public loadedAssets: number = 0;
@@ -165,6 +166,75 @@ export class AssetManager {
       this.loadImage(src);
     }
     return null;
+  }
+
+  // Texture and procedural graphic cache (avoids per-frame gradient / object creation)
+  public getOrCreateCanvas(
+    key: string,
+    width: number,
+    height: number,
+    draw: (ctx: CanvasRenderingContext2D) => void
+  ): HTMLCanvasElement {
+    let cached = this.canvasCache.get(key);
+    if (!cached) {
+      cached = document.createElement('canvas');
+      cached.width = width;
+      cached.height = height;
+      const ctx = cached.getContext('2d')!;
+      ctx.imageSmoothingEnabled = false;
+      draw(ctx);
+      this.canvasCache.set(key, cached);
+    }
+    return cached;
+  }
+
+  // Pre-cached amber lantern glow
+  public getLanternGlow(): HTMLCanvasElement {
+    return this.getOrCreateCanvas('lantern_glow_88', 88, 88, (ctx) => {
+      const g = ctx.createRadialGradient(44, 44, 2, 44, 44, 42);
+      g.addColorStop(0, 'rgba(251, 191, 36, 0.45)');
+      g.addColorStop(0.5, 'rgba(245, 158, 11, 0.18)');
+      g.addColorStop(1, 'rgba(245, 158, 11, 0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 88, 88);
+    });
+  }
+
+  // Pre-cached cyan crystal pulse glow
+  public getCrystalGlow(): HTMLCanvasElement {
+    return this.getOrCreateCanvas('crystal_glow_80', 80, 80, (ctx) => {
+      const g = ctx.createRadialGradient(40, 40, 2, 40, 40, 38);
+      g.addColorStop(0, 'rgba(56, 189, 248, 0.50)');
+      g.addColorStop(0.5, 'rgba(14, 165, 233, 0.18)');
+      g.addColorStop(1, 'rgba(14, 165, 233, 0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 80, 80);
+    });
+  }
+
+  // Pre-cached forge fire glow
+  public getForgeGlow(): HTMLCanvasElement {
+    return this.getOrCreateCanvas('forge_glow_160', 160, 160, (ctx) => {
+      const g = ctx.createRadialGradient(80, 80, 4, 80, 80, 75);
+      g.addColorStop(0, 'rgba(249, 115, 22, 0.55)');
+      g.addColorStop(0.5, 'rgba(220, 38, 38, 0.20)');
+      g.addColorStop(1, 'rgba(220, 38, 38, 0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 160, 160);
+    });
+  }
+
+  // Pre-cached subtle screen vignette
+  public getVignette(w: number, h: number): HTMLCanvasElement {
+    const key = `vignette_${w}_${h}`;
+    return this.getOrCreateCanvas(key, w, h, (ctx) => {
+      const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.4, w / 2, h / 2, Math.hypot(w, h) * 0.55);
+      g.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      g.addColorStop(0.7, 'rgba(10, 14, 26, 0.18)');
+      g.addColorStop(1, 'rgba(6, 8, 16, 0.45)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    });
   }
 }
 
