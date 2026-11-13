@@ -55,6 +55,7 @@ export class AssetManager {
     '/assets/environment/crystal_blue.png',
     '/assets/environment/rock_large.png',
     '/assets/environment/rock_mossy.png',
+    '/assets/environment/rock_small.png',
     '/assets/environment/bush_01.png',
     '/assets/environment/bush_02.png',
     '/assets/environment/sign_post.png',

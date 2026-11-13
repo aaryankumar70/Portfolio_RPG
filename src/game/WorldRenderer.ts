@@ -100,30 +100,36 @@ export class WorldRenderer {
       { x: 1480, y: 1600, type: 'daisy' }
     ];
 
+    const flowerPatchImg = assetManager.getImage('/assets/environment/flowers_patch.png');
     flowerClusters.forEach((cl) => {
-      const cx = cl.x - cameraX;
-      const cy = cl.y - cameraY;
-      const color =
-        cl.type === 'poppy'
-          ? '#ef4444'
-          : cl.type === 'buttercup'
-          ? '#facc15'
-          : cl.type === 'lavender'
-          ? '#c084fc'
-          : '#f8fafc';
+      const cx = Math.round(cl.x - cameraX);
+      const cy = Math.round(cl.y - cameraY);
 
-      ctx.fillStyle = '#15803d'; // stems
-      ctx.fillRect(cx, cy + 2, 2, 4);
-      ctx.fillRect(cx + 6, cy + 3, 2, 4);
-      ctx.fillRect(cx - 5, cy + 3, 2, 4);
+      if (flowerPatchImg) {
+        ctx.drawImage(flowerPatchImg, cx - 16, cy - 16, 32, 32);
+      } else {
+        const color =
+          cl.type === 'poppy'
+            ? '#ef4444'
+            : cl.type === 'buttercup'
+            ? '#facc15'
+            : cl.type === 'lavender'
+            ? '#c084fc'
+            : '#f8fafc';
 
-      ctx.fillStyle = color; // blossom petals
-      ctx.fillRect(cx - 1, cy, 4, 3);
-      ctx.fillRect(cx + 5, cy + 1, 4, 3);
-      ctx.fillRect(cx - 6, cy + 1, 4, 3);
+        ctx.fillStyle = '#15803d'; // stems
+        ctx.fillRect(cx, cy + 2, 2, 4);
+        ctx.fillRect(cx + 6, cy + 3, 2, 4);
+        ctx.fillRect(cx - 5, cy + 3, 2, 4);
 
-      ctx.fillStyle = '#fef08a'; // center core
-      ctx.fillRect(cx, cy + 1, 2, 1);
+        ctx.fillStyle = color; // blossom petals
+        ctx.fillRect(cx - 1, cy, 4, 3);
+        ctx.fillRect(cx + 5, cy + 1, 4, 3);
+        ctx.fillRect(cx - 6, cy + 1, 4, 3);
+
+        ctx.fillStyle = '#fef08a'; // center core
+        ctx.fillRect(cx, cy + 1, 2, 1);
+      }
     });
   }
 
@@ -317,17 +323,36 @@ export class WorldRenderer {
     }
     ctx.fill();
 
-    // C. River Stone Border along the bank
+    // C. River Stone Border along the bank with real PNG sprites & water ripples
+    const rockSmall = assetManager.getImage('/assets/environment/rock_small.png');
+    const rockMossy = assetManager.getImage('/assets/environment/rock_mossy.png');
+
     for (let y = 20; y <= 2200; y += 45) {
-      const rx = getRiverX(y);
-      const ry = y - cameraY;
-      const rockRadius = 5 + ((y * 7) % 4);
-      ctx.fillStyle = '#64748b';
+      const rx = Math.round(getRiverX(y));
+      const ry = Math.round(y - cameraY);
+      const isMossy = (y % 90 === 0);
+      const rockImg = isMossy ? rockMossy : rockSmall;
+
+      if (rockImg) {
+        ctx.drawImage(rockImg, rx - 4, ry - 8, 22, 16);
+      } else {
+        const rockRadius = 5 + ((y * 7) % 4);
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath();
+        ctx.ellipse(rx + 2, ry, rockRadius, rockRadius * 0.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(rx + 1, ry - 2, 2, 2);
+      }
+
+      // Water ripple wobble along bank where water meets stone
+      const ripplePhase = (this.animTimer * 1.8 + y * 0.04) % 1.0;
+      const rippleW = 10 + ripplePhase * 12;
+      ctx.strokeStyle = `rgba(186, 230, 253, ${(1 - ripplePhase) * 0.45})`;
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.ellipse(rx + 2, ry, rockRadius, rockRadius * 0.7, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillRect(rx + 1, ry - 2, 2, 2);
+      ctx.ellipse(rx + 14, ry, rippleW, rippleW * 0.35, 0, 0, Math.PI * 2);
+      ctx.stroke();
     }
 
     // D. Animated Shimmer Ripples & Water Currents
@@ -480,7 +505,12 @@ export class WorldRenderer {
       ctx.beginPath();
       ctx.ellipse(rx, ry + 20, 36, 12, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.drawImage(img, rx - 58, ry - 90, 116, 116);
+
+      // Natural wind sway on foliage (origin at base of trunk, phase-shifted by position)
+      const swayAngle = Math.sin(this.animTimer * 1.5 + x * 0.012 + y * 0.018) * 0.022;
+      ctx.translate(rx, ry + 20);
+      ctx.rotate(swayAngle);
+      ctx.drawImage(img, -58, -110, 116, 116);
       ctx.restore();
     } else {
       if (type === 'pine') {
@@ -708,6 +738,57 @@ export class WorldRenderer {
       }
     });
 
+    // Vertical Garden Perimeter Fences (Left: X=615, Right: X=860)
+    const vertFenceImg = assetManager.getImage('/assets/environment/fence_vertical.png');
+    for (let fy = 925; fy <= 1080; fy += 32) {
+      depthList.push({
+        y: fy + 16,
+        render: (c) => {
+          c.save();
+          if (vertFenceImg) {
+            c.drawImage(vertFenceImg, 615 - cameraX, fy - cameraY, 16, 32);
+            c.drawImage(vertFenceImg, 860 - cameraX, fy - cameraY, 16, 32);
+          } else {
+            c.fillStyle = '#78350f';
+            c.fillRect(618 - cameraX, fy - cameraY, 8, 32);
+            c.fillRect(863 - cameraX, fy - cameraY, 8, 32);
+          }
+          c.restore();
+        }
+      });
+    }
+
+    // 5b. Natural Mountain & Cave Rocks (Python Cave, SQL Mines)
+    const worldRocks = [
+      { x: 1710, y: 720, type: 'mossy', w: 32, h: 26 },
+      { x: 1980, y: 720, type: 'large', w: 40, h: 32 },
+      { x: 1720, y: 1140, type: 'mossy', w: 32, h: 26 },
+      { x: 1970, y: 1140, type: 'small', w: 24, h: 20 },
+      { x: 2280, y: 1130, type: 'small', w: 24, h: 20 }
+    ];
+    worldRocks.forEach((rk) => {
+      depthList.push({
+        y: rk.y + 10,
+        render: (c) => {
+          const imgPath = rk.type === 'large'
+            ? '/assets/environment/rock_large.png'
+            : rk.type === 'mossy'
+            ? '/assets/environment/rock_mossy.png'
+            : '/assets/environment/rock_small.png';
+          const rkImg = assetManager.getImage(imgPath);
+          if (rkImg) {
+            c.save();
+            c.fillStyle = 'rgba(15, 23, 42, 0.35)';
+            c.beginPath();
+            c.ellipse(rk.x - cameraX, rk.y - cameraY + 6, rk.w * 0.4, 6, 0, 0, Math.PI * 2);
+            c.fill();
+            c.drawImage(rkImg, Math.round(rk.x - cameraX - rk.w / 2), Math.round(rk.y - cameraY - rk.h / 2), rk.w, rk.h);
+            c.restore();
+          }
+        }
+      });
+    });
+
     // 6. Python Cave Magical Glowing Blue Crystals
     const crystals = [
       { x: 1720, y: 560, scale: 32 },
@@ -798,7 +879,12 @@ export class WorldRenderer {
             c.beginPath();
             c.ellipse(t.x - cameraX, t.y - cameraY + 20, 36, 12, 0, 0, Math.PI * 2);
             c.fill();
-            c.drawImage(img, t.x - cameraX - 58, t.y - cameraY - 90, 116, 116);
+
+            // Natural wind sway on foliage
+            const swayAngle = Math.sin(this.animTimer * 1.5 + t.x * 0.012 + t.y * 0.018) * 0.022;
+            c.translate(t.x - cameraX, t.y - cameraY + 20);
+            c.rotate(swayAngle);
+            c.drawImage(img, -58, -110, 116, 116);
             c.restore();
           } else {
             this.drawOakTree(c, t.x - cameraX, t.y - cameraY, 44);
@@ -851,7 +937,27 @@ export class WorldRenderer {
   ) {
     ctx.save();
 
+    const renderSmokeColumn = (chimX: number, chimY: number, isDark: boolean = false) => {
+      for (let i = 0; i < 4; i++) {
+        const t = (this.animTimer * 0.7 + i * 0.25) % 1.0;
+        const drift = Math.sin(t * Math.PI * 2 + i) * 5 + t * 10;
+        const px = chimX + drift;
+        const py = chimY - t * 38;
+        const rad = 3.5 + t * 6;
+        const alpha = Math.max(0, (1 - t) * 0.55);
+        ctx.fillStyle = isDark
+          ? `rgba(71, 85, 105, ${alpha})`
+          : `rgba(241, 245, 249, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(px, py, rad, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    };
+
     if (id === 'coffee_shop') {
+      // Chimney warm smoke
+      renderSmokeColumn(bx + 32, by + 12, false);
+
       // Steam puffs rising from coffee cup on roof
       const cupX = bx + Math.floor(bw / 2);
       const cupY = by + 22;
@@ -870,14 +976,8 @@ export class WorldRenderer {
       ctx.fillStyle = '#fde047';
       ctx.fillRect(forgeX + 7, forgeY + 12 + flicker * 0.5, 10, 8);
 
-      // Chimney dark smoke puffs
-      const chimX = bx + bw - 48;
-      const chimY = by + 12;
-      const smokeDrift = (this.animTimer * 22) % 32;
-      ctx.fillStyle = 'rgba(100, 116, 139, 0.45)';
-      ctx.beginPath();
-      ctx.arc(chimX + 12 + Math.sin(smokeDrift * 0.3) * 4, chimY - smokeDrift, 5 + smokeDrift * 0.2, 0, Math.PI * 2);
-      ctx.fill();
+      // Chimney dark forge smoke column
+      renderSmokeColumn(bx + bw - 36, by + 10, true);
     } else if (id === 'python_cave') {
       // Pulsing cyan & blue crystal magic glow
       const pulse = Math.sin(this.animTimer * 3.5) * 4;
@@ -909,14 +1009,8 @@ export class WorldRenderer {
       ctx.arc(domeX, domeY, 22 + corePulse, 0, Math.PI * 2);
       ctx.fill();
     } else if (id === 'home') {
-      // White smoke puffs from home chimney
-      const hChimX = bx + bw - 44;
-      const hChimY = by + 8;
-      const hSmoke = (this.animTimer * 18) % 28;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-      ctx.beginPath();
-      ctx.arc(hChimX + 10 + Math.sin(hSmoke * 0.4) * 3, hChimY - hSmoke, 4 + hSmoke * 0.16, 0, Math.PI * 2);
-      ctx.fill();
+      // Cozy white smoke puffs billowing from home chimney
+      renderSmokeColumn(bx + bw - 34, by + 8, false);
     }
 
     ctx.restore();
@@ -1188,6 +1282,18 @@ export class WorldRenderer {
       ctx.fillRect(fx - 8, fy - 14, 16, 20);
       ctx.fillStyle = '#64748b';
       ctx.fillRect(fx - 12, fy - 18, 24, 6);
+    }
+
+    // Animated water ripples inside fountain basin
+    for (let r = 0; r < 3; r++) {
+      const ripplePhase = (this.animTimer * 1.4 + r * 0.33) % 1.0;
+      const rippleR = 8 + ripplePhase * 26;
+      const alpha = (1 - ripplePhase) * 0.6;
+      ctx.strokeStyle = `rgba(186, 230, 253, ${alpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(fx, fy + 8, rippleR, rippleR * 0.45, 0, 0, Math.PI * 2);
+      ctx.stroke();
     }
 
     // Animated Sparkling Water Droplets Spraying
