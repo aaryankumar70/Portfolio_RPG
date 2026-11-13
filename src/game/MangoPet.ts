@@ -214,10 +214,18 @@ export class MangoPet {
     const destH = frameH * scale;
 
     ctx.save();
-    // Soft shadow beneath Mango's paws
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+    // Consistent soft shadow beneath Mango's paws
+    ctx.fillStyle = TUNING.ATMOSPHERE.SHADOW_COLOR;
     ctx.beginPath();
-    ctx.ellipse(screenX, screenY - 2, destW * 0.32, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(
+      screenX + TUNING.ATMOSPHERE.SHADOW_OFFSET_X,
+      screenY - 2 + TUNING.ATMOSPHERE.SHADOW_OFFSET_Y,
+      destW * 0.32,
+      5,
+      0,
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
 
     if (img) {

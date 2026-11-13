@@ -270,8 +270,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // Foreground Particles
       particles.render(offCtx, camX, camY);
 
-      // Day / Night Lighting Shader
-      renderer.renderLightingShader(offCtx, camX, camY, timeOfDay);
+      // Day / Night Lighting Shader with single cached lightmap & additive light pools
+      renderer.renderLightingShader(offCtx, camX, camY, timeOfDay, player);
 
       // 8. Integer-Scale Offscreen Buffer to Window Canvas with Letterboxing
       const scaleX = canvas.width / viewW;

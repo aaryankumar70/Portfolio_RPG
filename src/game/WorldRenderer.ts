@@ -4,6 +4,7 @@ import { PlayerCharacter } from './PlayerCharacter';
 import { NPCManager } from './NPCManager';
 import { MangoPet } from './MangoPet';
 import { assetManager } from './AssetManager';
+import { TUNING } from './TUNING';
 
 interface Bird {
   x: number;
@@ -501,9 +502,17 @@ export class WorldRenderer {
     if (img) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+      ctx.fillStyle = TUNING.ATMOSPHERE.SHADOW_COLOR;
       ctx.beginPath();
-      ctx.ellipse(rx, ry + 20, 36, 12, 0, 0, Math.PI * 2);
+      ctx.ellipse(
+        rx + TUNING.ATMOSPHERE.SHADOW_OFFSET_X,
+        ry + 20 + TUNING.ATMOSPHERE.SHADOW_OFFSET_Y,
+        36,
+        12,
+        0,
+        0,
+        Math.PI * 2
+      );
       ctx.fill();
 
       // Natural wind sway on foliage (origin at base of trunk, phase-shifted by position)
@@ -569,9 +578,17 @@ export class WorldRenderer {
             roofTopY = destY;
 
             // Ground contact shadow
-            c.fillStyle = 'rgba(15, 23, 42, 0.45)';
+            c.fillStyle = TUNING.ATMOSPHERE.SHADOW_COLOR;
             c.beginPath();
-            c.ellipse(bx + Math.floor(b.width / 2), by + b.height - 4, Math.floor(destW * 0.46), 14, 0, 0, Math.PI * 2);
+            c.ellipse(
+              bx + Math.floor(b.width / 2) + TUNING.ATMOSPHERE.SHADOW_OFFSET_X,
+              by + b.height - 4 + TUNING.ATMOSPHERE.SHADOW_OFFSET_Y,
+              Math.floor(destW * 0.46),
+              14,
+              0,
+              0,
+              Math.PI * 2
+            );
             c.fill();
 
             c.imageSmoothingEnabled = false;
@@ -581,8 +598,13 @@ export class WorldRenderer {
             this.drawBuildingAnimatedOverlays(c, b.id, destX, destY, destW, destH);
           } else {
             // Drop shadow fallback
-            c.fillStyle = 'rgba(15, 23, 42, 0.4)';
-            c.fillRect(bx - 6, by + b.height - 8, b.width + 12, 16);
+            c.fillStyle = TUNING.ATMOSPHERE.SHADOW_COLOR;
+            c.fillRect(
+              bx - 6 + TUNING.ATMOSPHERE.SHADOW_OFFSET_X,
+              by + b.height - 8 + TUNING.ATMOSPHERE.SHADOW_OFFSET_Y,
+              b.width + 12,
+              16
+            );
 
             if (b.id === 'coffee_shop') {
               this.drawCoffeeShop(c, bx, by, b.width, b.height);
@@ -875,9 +897,17 @@ export class WorldRenderer {
           if (img) {
             c.save();
             c.imageSmoothingEnabled = false;
-            c.fillStyle = 'rgba(15, 23, 42, 0.4)';
+            c.fillStyle = TUNING.ATMOSPHERE.SHADOW_COLOR;
             c.beginPath();
-            c.ellipse(t.x - cameraX, t.y - cameraY + 20, 36, 12, 0, 0, Math.PI * 2);
+            c.ellipse(
+              t.x - cameraX + TUNING.ATMOSPHERE.SHADOW_OFFSET_X,
+              t.y - cameraY + 20 + TUNING.ATMOSPHERE.SHADOW_OFFSET_Y,
+              36,
+              12,
+              0,
+              0,
+              Math.PI * 2
+            );
             c.fill();
 
             // Natural wind sway on foliage
@@ -1688,19 +1718,162 @@ export class WorldRenderer {
     ctx.restore();
   }
 
-  // Atmospheric Lighting Shader (Warm natural sunlight)
-  public renderLightingShader(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number, timeOfDay: TimeOfDay) {
-    ctx.save();
+  // Cached lightmap canvas and context for additive light pools & darkness cutout
+  private lightmapCanvas: HTMLCanvasElement | null = null;
+  private lightmapCtx: CanvasRenderingContext2D | null = null;
+
+  private getLightmap(width: number, height: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } | null {
+    if (!this.lightmapCanvas || this.lightmapCanvas.width !== width || this.lightmapCanvas.height !== height) {
+      this.lightmapCanvas = document.createElement('canvas');
+      this.lightmapCanvas.width = width;
+      this.lightmapCanvas.height = height;
+      this.lightmapCtx = this.lightmapCanvas.getContext('2d');
+    }
+    if (!this.lightmapCtx) return null;
+    return { canvas: this.lightmapCanvas, ctx: this.lightmapCtx };
+  }
+
+  // Atmospheric Lighting Shader: Single cached lightmap, additive light pools, time-of-day tints & vignette
+  public renderLightingShader(
+    ctx: CanvasRenderingContext2D,
+    cameraX: number,
+    cameraY: number,
+    timeOfDay: TimeOfDay,
+    player?: PlayerCharacter
+  ) {
     const w = ctx.canvas.width;
     const h = ctx.canvas.height;
+    const lightmap = this.getLightmap(w, h);
+    if (!lightmap) return;
 
-    // Subtle edge vignette
+    const { canvas: lmCanvas, ctx: lmCtx } = lightmap;
+
+    // 1. Reset lightmap buffer
+    lmCtx.globalCompositeOperation = 'source-over';
+    lmCtx.clearRect(0, 0, w, h);
+
+    // 2. Base atmospheric ambient tint
+    if (timeOfDay === 'day') {
+      // Warm golden sunlight tint
+      lmCtx.fillStyle = 'rgba(255, 235, 180, 0.08)';
+      lmCtx.fillRect(0, 0, w, h);
+    } else if (timeOfDay === 'sunset') {
+      // Rich golden-hour amber/rose atmospheric tint
+      lmCtx.fillStyle = 'rgba(180, 75, 45, 0.32)';
+      lmCtx.fillRect(0, 0, w, h);
+    } else {
+      // Deep nocturnal navy/slate
+      lmCtx.fillStyle = 'rgba(10, 16, 36, 0.78)';
+      lmCtx.fillRect(0, 0, w, h);
+    }
+
+    // 3. For sunset and night: Additive light pools cutout
+    if (timeOfDay !== 'day') {
+      const isNight = timeOfDay === 'night';
+      const glowAlpha = isNight ? 1.0 : 0.65;
+
+      // Punch soft light holes through darkness using destination-out
+      lmCtx.globalCompositeOperation = 'destination-out';
+
+      const punchHole = (lx: number, ly: number, radius: number, strength: number = 1.0) => {
+        const sx = Math.round(lx - cameraX);
+        const sy = Math.round(ly - cameraY);
+        if (sx < -radius || sx > w + radius || sy < -radius || sy > h + radius) return;
+
+        const grad = lmCtx.createRadialGradient(sx, sy, 0, sx, sy, radius);
+        grad.addColorStop(0, `rgba(0, 0, 0, ${Math.min(1, 0.92 * strength)})`);
+        grad.addColorStop(0.55, `rgba(0, 0, 0, ${Math.min(1, 0.5 * strength)})`);
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        lmCtx.fillStyle = grad;
+        lmCtx.beginPath();
+        lmCtx.arc(sx, sy, radius, 0, Math.PI * 2);
+        lmCtx.fill();
+      };
+
+      // Street Lanterns
+      const lanterns = [
+        { x: 1080, y: 860 },
+        { x: 1320, y: 860 },
+        { x: 1080, y: 1060 },
+        { x: 1320, y: 1060 },
+        { x: 745, y: 740 },
+        { x: 1850, y: 740 },
+        { x: 755, y: 1560 },
+        { x: 1840, y: 1580 },
+        { x: 2160, y: 1100 }
+      ];
+      lanterns.forEach(lp => punchHole(lp.x, lp.y - 40, TUNING.ATMOSPHERE.LIGHT_RADII.LANTERN, glowAlpha));
+
+      // Building Windows
+      const windows = [
+        { x: 715, y: 690 }, { x: 775, y: 690 },       // Coffee shop
+        { x: 1160, y: 685 }, { x: 1240, y: 685 },     // Guild hall
+        { x: 1165, y: 1510 }, { x: 1235, y: 1510 },   // Home
+        { x: 720, y: 1520 }, { x: 790, y: 1520 },     // Library
+        { x: 1170, y: 1840 }, { x: 1230, y: 1840 }    // Post office
+      ];
+      windows.forEach(win => punchHole(win.x, win.y, TUNING.ATMOSPHERE.LIGHT_RADII.WINDOW, glowAlpha * 0.85));
+
+      // Blacksmith Forge Hearth
+      punchHole(2300, 1110, TUNING.ATMOSPHERE.LIGHT_RADII.FORGE, glowAlpha * 1.25);
+
+      // Python Cave Crystals
+      const crystals = [
+        { x: 1720, y: 560 }, { x: 1970, y: 550 },
+        { x: 1730, y: 690 }, { x: 1960, y: 680 }
+      ];
+      crystals.forEach(cr => punchHole(cr.x, cr.y - 10, TUNING.ATMOSPHERE.LIGHT_RADII.CRYSTAL, glowAlpha * 0.95));
+
+      // SQL Mine Shaft Lantern
+      punchHole(1850, 1120, TUNING.ATMOSPHERE.LIGHT_RADII.MINES_LANTERN, glowAlpha);
+
+      // Player small aura / lantern
+      if (player) {
+        punchHole(player.state.x, player.state.y, 42, 0.75);
+      }
+
+      // 4. Stamp warm colored additive light pools
+      lmCtx.globalCompositeOperation = 'source-over';
+
+      const addColorPool = (lx: number, ly: number, radius: number, color: string) => {
+        const sx = Math.round(lx - cameraX);
+        const sy = Math.round(ly - cameraY);
+        if (sx < -radius || sx > w + radius || sy < -radius || sy > h + radius) return;
+
+        const grad = lmCtx.createRadialGradient(sx, sy, 0, sx, sy, radius);
+        grad.addColorStop(0, color);
+        grad.addColorStop(1, 'transparent');
+        lmCtx.fillStyle = grad;
+        lmCtx.beginPath();
+        lmCtx.arc(sx, sy, radius, 0, Math.PI * 2);
+        lmCtx.fill();
+      };
+
+      // Lantern amber glow
+      lanterns.forEach(lp => addColorPool(lp.x, lp.y - 40, TUNING.ATMOSPHERE.LIGHT_RADII.LANTERN, 'rgba(253, 224, 71, 0.35)'));
+
+      // Forge roaring hearth
+      addColorPool(2300, 1110, TUNING.ATMOSPHERE.LIGHT_RADII.FORGE, 'rgba(249, 115, 22, 0.45)');
+
+      // Python Cave arcane cyan
+      crystals.forEach(cr => addColorPool(cr.x, cr.y - 10, TUNING.ATMOSPHERE.LIGHT_RADII.CRYSTAL, 'rgba(56, 189, 248, 0.45)'));
+
+      // Windows warm interior lighting
+      windows.forEach(win => addColorPool(win.x, win.y, TUNING.ATMOSPHERE.LIGHT_RADII.WINDOW, 'rgba(251, 191, 36, 0.30)'));
+    }
+
+    // 5. Blend the lightmap onto the game canvas in a single draw call
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(lmCanvas, 0, 0);
+
+    // 6. Subtle edge vignette and color grade
     const cxCenter = w / 2;
     const cyCenter = h / 2;
     const maxRadius = Math.hypot(cxCenter, cyCenter);
     const vignette = ctx.createRadialGradient(cxCenter, cyCenter, maxRadius * 0.55, cxCenter, cyCenter, maxRadius);
     vignette.addColorStop(0, 'transparent');
-    vignette.addColorStop(1, timeOfDay === 'night' ? 'rgba(10, 15, 30, 0.7)' : 'rgba(15, 23, 42, 0.25)');
+    vignette.addColorStop(1, `rgba(10, 15, 30, ${timeOfDay === 'night' ? 0.6 : TUNING.ATMOSPHERE.VIGNETTE_INTENSITY})`);
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, w, h);
 

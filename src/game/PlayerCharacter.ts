@@ -209,9 +209,23 @@ export class PlayerCharacter {
       ctx.restore();
     });
 
-    // 2. Render Main Player Sprite (Pixel Snapped)
+    // 2. Render Main Player Sprite (Pixel Snapped with Ground Contact Shadow)
     const px = Math.round(this.state.x - cameraX);
     const py = Math.round(this.state.y - cameraY);
+
+    // Consistent ground drop shadow
+    ctx.save();
+    ctx.fillStyle = TUNING.ATMOSPHERE.SHADOW_COLOR;
+    ctx.beginPath();
+    ctx.ellipse(
+      px + TUNING.ATMOSPHERE.SHADOW_OFFSET_X,
+      py + TUNING.PLAYER.HITBOX.OFFSET_Y + TUNING.ATMOSPHERE.SHADOW_OFFSET_Y,
+      TUNING.PLAYER.HITBOX.RADIUS_X + 2,
+      TUNING.PLAYER.HITBOX.RADIUS_Y,
+      0, 0, Math.PI * 2
+    );
+    ctx.fill();
+    ctx.restore();
 
     const frame = Math.floor(this.state.isMoving ? this.walkAnimTimer : this.idleAnimTimer);
     pixelAssets.drawPlayerSprite(ctx, px, py, this.state.direction, frame, this.state.isMoving);
