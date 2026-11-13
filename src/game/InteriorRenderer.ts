@@ -6,6 +6,7 @@ import { assetManager } from './AssetManager';
 import { pixelAssets } from './PixelArtAssets';
 import { PlayerCharacter } from './PlayerCharacter';
 import { MangoPet } from './MangoPet';
+import { TUNING } from './TUNING';
 
 interface DepthItem {
   y: number;
@@ -22,11 +23,14 @@ export class InteriorRenderer {
     mangoPet: MangoPet,
     activeHotspot: string | null,
     nearExit: boolean,
-    dt: number
+    dt: number,
+    camX: number = 0,
+    camY: number = 0
   ) {
     this.animTimer += dt * 3.5;
 
     ctx.save();
+    ctx.translate(-Math.round(camX), -Math.round(camY));
 
     // 1. Room Floor
     this.drawFloor(ctx, config);
@@ -252,6 +256,81 @@ export class InteriorRenderer {
     }
   }
 
+  // Furniture Item Drawing with PNG Sprite Replacements & Fallback
+  private drawFurnitureItem(ctx: CanvasRenderingContext2D, f: any) {
+    const id = (f.id || '').toLowerCase();
+    const type = (f.type || '').toLowerCase();
+    const name = (f.name || '').toLowerCase();
+
+    let spritePath: string | null = null;
+    let drawOffsetY = 0;
+    let drawExtraH = 0;
+
+    if (id.includes('counter') || type === 'counter') {
+      spritePath = '/assets/interiors/coffee_counter.png';
+    } else if (id.includes('table') || type === 'table') {
+      if (name.includes('reading') || id.includes('reading')) {
+        spritePath = '/assets/interiors/reading_table.png';
+      } else {
+        spritePath = '/assets/interiors/cafe_table.png';
+      }
+    } else if (id.includes('espresso') || name.includes('espresso')) {
+      spritePath = '/assets/interiors/espresso_machine.png';
+    } else if (id.includes('desk') || name.includes('desk') || id.includes('computer')) {
+      spritePath = '/assets/interiors/desk_computer.png';
+      drawOffsetY = -8;
+      drawExtraH = 8;
+    } else if (id.includes('bed') || type === 'bed') {
+      spritePath = '/assets/interiors/bed.png';
+    } else if (id.includes('shelf') || id.includes('book') || type === 'bookshelf') {
+      spritePath = '/assets/interiors/bookshelf_tall.png';
+      drawOffsetY = -24;
+      drawExtraH = 24;
+    } else if (id.includes('anvil') || type === 'anvil') {
+      spritePath = '/assets/interiors/anvil.png';
+    } else if (id.includes('weapon') || id.includes('rack')) {
+      spritePath = '/assets/interiors/weapon_rack.png';
+      drawOffsetY = -14;
+      drawExtraH = 14;
+    } else if (id.includes('forge') || id.includes('furnace')) {
+      spritePath = '/assets/interiors/forge_furnace.png';
+      drawOffsetY = -20;
+      drawExtraH = 20;
+    } else if (id.includes('plant') || type === 'plant') {
+      spritePath = '/assets/interiors/potted_plant.png';
+    } else if (id.includes('server') || id.includes('crystal_rack')) {
+      spritePath = '/assets/interiors/server_crystal_rack.png';
+    }
+
+    if (spritePath) {
+      const img = assetManager.getImage(spritePath);
+      if (img) {
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        // Consistent soft drop shadow beneath furniture
+        ctx.fillStyle = TUNING.ATMOSPHERE.SHADOW_COLOR;
+        ctx.beginPath();
+        ctx.ellipse(
+          f.x + f.w / 2 + TUNING.ATMOSPHERE.SHADOW_OFFSET_X,
+          f.y + f.h - 2 + TUNING.ATMOSPHERE.SHADOW_OFFSET_Y,
+          f.w * 0.44,
+          6,
+          0,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+
+        ctx.drawImage(img, f.x, f.y + drawOffsetY, f.w, f.h + drawExtraH);
+        ctx.restore();
+        return;
+      }
+    }
+
+    // Fallback to handcrafted procedural drawing
+    f.draw(ctx, this.animTimer);
+  }
+
   // 3. Y-Sorted Depth Entities (Furniture, NPCs, Mango, Player)
   private drawDepthEntities(
     ctx: CanvasRenderingContext2D,
@@ -261,11 +340,11 @@ export class InteriorRenderer {
   ) {
     const depthList: DepthItem[] = [];
 
-    // A. Furniture Objects
+    // A. Furniture Objects (Baseline foot depth sorting)
     config.furniture.forEach((f) => {
       depthList.push({
         y: f.y + f.h,
-        render: (c) => f.draw(c, this.animTimer)
+        render: (c) => this.drawFurnitureItem(c, f)
       });
     });
 
@@ -277,9 +356,17 @@ export class InteriorRenderer {
         render: (c) => {
           c.save();
           // Drop shadow
-          c.fillStyle = 'rgba(0, 0, 0, 0.45)';
+          c.fillStyle = TUNING.ATMOSPHERE.SHADOW_COLOR;
           c.beginPath();
-          c.ellipse(npc.x, npc.y + 44, 14, 5, 0, 0, Math.PI * 2);
+          c.ellipse(
+            npc.x + TUNING.ATMOSPHERE.SHADOW_OFFSET_X,
+            npc.y + 44 + TUNING.ATMOSPHERE.SHADOW_OFFSET_Y,
+            14,
+            5,
+            0,
+            0,
+            Math.PI * 2
+          );
           c.fill();
 
           // NPC Sprite
@@ -312,19 +399,19 @@ export class InteriorRenderer {
       });
     }
 
-    // C. Mango the Cat Pet
+    // C. Mango the Cat Pet Companion
     depthList.push({
       y: mangoPet.y + 12,
       render: (c) => mangoPet.render(c, 0, 0)
     });
 
-    // D. Player Character (Aryan)
+    // D. Player Character (Aryan - Feet depth sorted so tall furniture occludes properly)
     depthList.push({
-      y: player.state.y + 24,
+      y: player.state.y + TUNING.PLAYER.HITBOX.OFFSET_Y,
       render: (c) => player.render(c, 0, 0)
     });
 
-    // Sort all entities by base Y (depth-sorting)
+    // Sort all entities strictly by base Y (depth-sorting)
     depthList.sort((a, b) => a.y - b.y);
 
     depthList.forEach((item) => item.render(ctx));
@@ -332,35 +419,57 @@ export class InteriorRenderer {
 
   // 4. Atmospheric Lighting & Particles Overlay
   private drawLightingAndParticles(ctx: CanvasRenderingContext2D, config: InteriorConfig) {
-    const { roomWidth: rw, roomHeight: rh } = config;
+    const { roomWidth: rw, roomHeight: rh, id } = config;
 
     // Ambient Darkness Vignette (Cached)
     const vignetteCanvas = assetManager.getVignette(rw, rh);
     ctx.drawImage(vignetteCanvas, 0, 0);
 
-    // Warm Hanging Lanterns
-    const lanterns = [
-      { x: 200, y: 150 },
-      { x: 600, y: 150 }
-    ];
+    if (id === 'python_cave') {
+      // Cool blue ambient & glowing crystals for Python Cave
+      ctx.fillStyle = 'rgba(8, 20, 48, 0.45)';
+      ctx.fillRect(0, 0, rw, rh);
 
-    const glowImg = assetManager.getLanternGlow();
+      const crystalGlow = assetManager.getCrystalGlow();
+      config.hotspots.forEach((hs) => {
+        const pulse = Math.sin(this.animTimer * 2.5 + hs.x) * 0.15;
+        ctx.save();
+        ctx.globalAlpha = 0.85 + pulse;
+        ctx.drawImage(crystalGlow, Math.round(hs.x - 40), Math.round(hs.y - 40));
+        ctx.restore();
+      });
+    } else if (id === 'coffee_shop' || id === 'home') {
+      // Warm golden ambient glow for Coffee Shop and Home
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.08)';
+      ctx.fillRect(0, 0, rw, rh);
 
-    lanterns.forEach((lp) => {
-      // Chain
-      ctx.fillStyle = '#1c1917';
-      ctx.fillRect(Math.round(lp.x - 1), 0, 2, lp.y);
-      // Brass Lantern fixture
-      ctx.fillStyle = '#d97706';
-      ctx.fillRect(Math.round(lp.x - 8), lp.y, 16, 18);
-      ctx.fillStyle = '#fde047';
-      ctx.fillRect(Math.round(lp.x - 5), lp.y + 3, 10, 12);
-      // Soft radial amber halo (Cached texture)
-      ctx.drawImage(glowImg, Math.round(lp.x - 44), Math.round(lp.y + 8 - 44));
-    });
+      // Warm hanging lanterns
+      const lanterns = [
+        { x: 200, y: 150 },
+        { x: 600, y: 150 }
+      ];
+      const glowImg = assetManager.getLanternGlow();
+
+      lanterns.forEach((lp) => {
+        ctx.fillStyle = '#1c1917';
+        ctx.fillRect(Math.round(lp.x - 1), 0, 2, lp.y);
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(Math.round(lp.x - 8), lp.y, 16, 18);
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(Math.round(lp.x - 5), lp.y + 3, 10, 12);
+        ctx.drawImage(glowImg, Math.round(lp.x - 44), Math.round(lp.y + 8 - 44));
+      });
+    } else if (id === 'guild_hall' || id === 'blacksmith') {
+      // Warm roaring forge/hearth ambient glow
+      ctx.fillStyle = 'rgba(249, 115, 22, 0.09)';
+      ctx.fillRect(0, 0, rw, rh);
+
+      const forgeGlow = assetManager.getForgeGlow();
+      ctx.drawImage(forgeGlow, Math.round(rw / 2 - 80), Math.round(180 - 80));
+    }
   }
 
-  // 5. Interactive Proximity Prompts
+  // 5. Interactive Proximity Prompts: Pulsing highlight + retro [E] button badge
   private drawInteractionPrompts(
     ctx: CanvasRenderingContext2D,
     config: InteriorConfig,
@@ -368,20 +477,37 @@ export class InteriorRenderer {
     nearExit: boolean,
     player: PlayerCharacter
   ) {
-    const px = player.state.x;
-    const py = player.state.y;
+    // A. Pulsing highlight ellipse under EVERY hotspot object
+    config.hotspots.forEach((hs) => {
+      const isCurrent = activeHotspotId === hs.id;
+      const pulse = Math.sin(this.animTimer * TUNING.INTERIOR.PROMPT_PULSE_SPEED) * 0.2 + 0.8;
+      ctx.save();
+      ctx.fillStyle = isCurrent
+        ? `rgba(250, 204, 21, ${0.38 * pulse})`
+        : `rgba(245, 158, 11, ${0.16 * pulse})`;
+      ctx.beginPath();
+      ctx.ellipse(hs.x, hs.y + 12, hs.radius * 0.42, hs.radius * 0.20, 0, 0, Math.PI * 2);
+      ctx.fill();
 
+      ctx.strokeStyle = isCurrent
+        ? `rgba(253, 224, 71, ${0.75 * pulse})`
+        : `rgba(245, 158, 11, ${0.35 * pulse})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // B. Retro [E] button badge above active target
     if (nearExit) {
-      // Prompt at Exit Door
       const { exitDoor } = config;
-      this.drawPromptBadge(ctx, exitDoor.x + exitDoor.w / 2, exitDoor.y - 25, 'E — Exit to Town');
+      this.drawPromptBadge(ctx, exitDoor.x + exitDoor.w / 2, exitDoor.y - 28, 'Exit to Town');
       return;
     }
 
     if (activeHotspotId) {
       const hs = config.hotspots.find((h) => h.id === activeHotspotId);
       if (hs) {
-        this.drawPromptBadge(ctx, hs.x, hs.y - 28, `E — ${hs.prompt}`);
+        this.drawPromptBadge(ctx, hs.x, hs.y - 32, hs.prompt);
       }
     }
   }
@@ -389,30 +515,41 @@ export class InteriorRenderer {
   private drawPromptBadge(ctx: CanvasRenderingContext2D, x: number, y: number, text: string) {
     ctx.save();
     ctx.font = '700 8px "Press Start 2P", monospace';
-    ctx.textAlign = 'center';
     const textW = ctx.measureText(text).width;
-    const pad = 10;
-    const boxW = textW + pad * 2;
+    const boxW = textW + 36;
     const boxH = 24;
 
-    const bob = Math.sin(this.animTimer * 4) * 3;
-    const by = y + bob;
+    const bob = Math.sin(this.animTimer * TUNING.INTERIOR.PROMPT_PULSE_SPEED) * TUNING.INTERIOR.PROMPT_BOB_AMPLITUDE;
+    const by = Math.round(y + bob);
 
     // Drop shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(x - boxW / 2 + 2, by - boxH / 2 + 2, boxW, boxH);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+    ctx.fillRect(Math.round(x - boxW / 2 + 2), Math.round(by - boxH / 2 + 2), boxW, boxH);
 
-    // Gold & Slate Card
+    // Dark panel with Amber/Gold border
     ctx.fillStyle = '#0f172a';
-    ctx.fillRect(x - boxW / 2, by - boxH / 2, boxW, boxH);
+    ctx.fillRect(Math.round(x - boxW / 2), Math.round(by - boxH / 2), boxW, boxH);
     ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 2;
-    ctx.strokeRect(x - boxW / 2, by - boxH / 2, boxW, boxH);
+    ctx.strokeRect(Math.round(x - boxW / 2), Math.round(by - boxH / 2), boxW, boxH);
 
-    // Glowing Golden Text
+    // Retro [E] Keycap Badge
+    const keyX = Math.round(x - boxW / 2 + 7);
+    const keyY = Math.round(by - 7);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(keyX, keyY, 14, 14);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(keyX + 1, keyY + 1, 12, 12);
     ctx.fillStyle = '#fde047';
+    ctx.font = '700 8px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, x, by);
+    ctx.fillText('E', keyX + 7, by);
+
+    // Prompt Label Text
+    ctx.fillStyle = '#f8fafc';
+    ctx.textAlign = 'left';
+    ctx.fillText(text, keyX + 17, by);
 
     // Pulsing retro arrow below badge
     ctx.fillStyle = '#f59e0b';

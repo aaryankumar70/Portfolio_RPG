@@ -29,6 +29,7 @@ import { InteriorRenderer } from '../../game/InteriorRenderer';
 import { PlayerCharacter } from '../../game/PlayerCharacter';
 import { MangoPet } from '../../game/MangoPet';
 import { soundManager } from '../../audio/SoundManager';
+import { TUNING } from '../../game/TUNING';
 import {
   WEAPON_SKILLS,
   MAJOR_PROJECTS,
@@ -61,6 +62,7 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
   const mangoPetRef = useRef<MangoPet>(new MangoPet(config.entrySpawn.x + 35, config.entrySpawn.y + 10));
   const keysRef = useRef<{ [key: string]: boolean }>({});
   const lastTimeRef = useRef<number>(performance.now());
+  const cameraRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Proximity states
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
@@ -71,7 +73,7 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
   const [activeTab, setActiveTab] = useState<number>(0);
   const [isFadingOut, setIsFadingOut] = useState<boolean>(false);
 
-  // Initialize player spawn in interior
+  // Initialize player spawn and clamped camera in interior
   useEffect(() => {
     const player = playerRef.current;
     player.state.x = config.entrySpawn.x;
@@ -80,6 +82,10 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
     player.state.path = [];
     mangoPetRef.current.x = config.entrySpawn.x + 30;
     mangoPetRef.current.y = config.entrySpawn.y + 10;
+
+    const initialCamX = Math.max(0, Math.min(config.roomWidth - TUNING.RENDER.INTERNAL_WIDTH, config.entrySpawn.x - TUNING.RENDER.INTERNAL_WIDTH / 2));
+    const initialCamY = Math.max(0, Math.min(config.roomHeight - TUNING.RENDER.INTERNAL_HEIGHT, config.entrySpawn.y - TUNING.RENDER.INTERNAL_HEIGHT / 2));
+    cameraRef.current = { x: initialCamX, y: initialCamY };
   }, [config]);
 
   // Handle building exit with fade
@@ -220,9 +226,28 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
         setIsNearExit(distExit < 55);
       }
 
-      // 4. Render Interior Scene
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      renderer.render(ctx, config, player, mango, activeHotspotId, isNearExit, dt);
+      // 4. Clamped Interior Camera (e.g. 800x560 room inside 640x360 viewport)
+      const viewW = TUNING.RENDER.INTERNAL_WIDTH;
+      const viewH = TUNING.RENDER.INTERNAL_HEIGHT;
+
+      const targetCamX = player.state.x - viewW / 2;
+      const targetCamY = player.state.y - viewH / 2;
+      const maxCamX = Math.max(0, config.roomWidth - viewW);
+      const maxCamY = Math.max(0, config.roomHeight - viewH);
+      const clampedTargetX = Math.max(0, Math.min(maxCamX, targetCamX));
+      const clampedTargetY = Math.max(0, Math.min(maxCamY, targetCamY));
+
+      const camDecay = 1 - Math.exp(-TUNING.INTERIOR.CAMERA_DAMPING * dt);
+      cameraRef.current.x += (clampedTargetX - cameraRef.current.x) * camDecay;
+      cameraRef.current.y += (clampedTargetY - cameraRef.current.y) * camDecay;
+
+      const camX = Math.round(cameraRef.current.x);
+      const camY = Math.round(cameraRef.current.y);
+
+      // Render Interior Scene
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, viewW, viewH);
+      renderer.render(ctx, config, player, mango, activeHotspotId, isNearExit, dt, camX, camY);
 
       animId = requestAnimationFrame(loop);
     };
@@ -239,17 +264,21 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
     const rect = canvas.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
+    const scaleX = TUNING.RENDER.INTERNAL_WIDTH / rect.width;
+    const scaleY = TUNING.RENDER.INTERNAL_HEIGHT / rect.height;
+    const roomX = clickX * scaleX + cameraRef.current.x;
+    const roomY = clickY * scaleY + cameraRef.current.y;
 
     // Direct hotspot click
     for (const hs of config.hotspots) {
-      if (Math.hypot(clickX - hs.x, clickY - hs.y) < hs.radius) {
+      if (Math.hypot(roomX - hs.x, roomY - hs.y) < hs.radius) {
         handleInteraction(hs.action);
         return;
       }
     }
 
     // Direct pet click (Mango meows)
-    if (Math.hypot(clickX - mangoPetRef.current.x, clickY - mangoPetRef.current.y) < 35) {
+    if (Math.hypot(roomX - mangoPetRef.current.x, roomY - mangoPetRef.current.y) < 35) {
       mangoPetRef.current.meow();
       return;
     }
@@ -292,10 +321,10 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
       <div className="relative border-4 border-[#3d2011] shadow-[0_20px_60px_rgba(0,0,0,0.95)] rounded overflow-hidden mt-10">
         <canvas
           ref={canvasRef}
-          width={config.roomWidth}
-          height={config.roomHeight}
+          width={TUNING.RENDER.INTERNAL_WIDTH}
+          height={TUNING.RENDER.INTERNAL_HEIGHT}
           onClick={handleCanvasClick}
-          className="cursor-pointer [image-rendering:pixelated]"
+          className="cursor-pointer [image-rendering:pixelated] max-w-full max-h-[75vh] aspect-[16/9]"
         />
       </div>
 
