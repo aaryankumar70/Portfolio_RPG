@@ -21,7 +21,9 @@ import {
   Swords,
   Mail,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { InteriorConfig, INTERIOR_CONFIGS } from '../../game/interiorConfig';
@@ -57,12 +59,64 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
   const config: InteriorConfig = INTERIOR_CONFIGS[buildingId] || INTERIOR_CONFIGS.coffee_shop;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const offscreenRef = useRef<HTMLCanvasElement | null>(null);
+  const viewDimRef = useRef<{ viewW: number; viewH: number }>({
+    viewW: TUNING.RENDER.INTERNAL_WIDTH,
+    viewH: TUNING.RENDER.INTERNAL_HEIGHT
+  });
   const rendererRef = useRef<InteriorRenderer>(new InteriorRenderer());
   const playerRef = useRef<PlayerCharacter>(new PlayerCharacter());
   const mangoPetRef = useRef<MangoPet>(new MangoPet(config.entrySpawn.x + 35, config.entrySpawn.y + 10));
   const keysRef = useRef<{ [key: string]: boolean }>({});
   const lastTimeRef = useRef<number>(performance.now());
   const cameraRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(
+    Boolean(typeof document !== 'undefined' && document.fullscreenElement)
+  );
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    soundManager.playClick();
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  // Canvas resize with devicePixelRatio to fill full viewport
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const handleResize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(window.innerWidth * dpr);
+      canvas.height = Math.floor(window.innerHeight * dpr);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Initialize offscreen buffer for crisp pixel art rendering
+  useEffect(() => {
+    if (!offscreenRef.current) {
+      const off = document.createElement('canvas');
+      off.width = TUNING.RENDER.INTERNAL_WIDTH;
+      off.height = TUNING.RENDER.INTERNAL_HEIGHT;
+      const oCtx = off.getContext('2d');
+      if (oCtx) oCtx.imageSmoothingEnabled = false;
+      offscreenRef.current = off;
+    }
+  }, []);
 
   // Proximity states
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
@@ -190,9 +244,11 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
 
     const loop = () => {
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      const offscreen = offscreenRef.current;
+      if (!canvas || !offscreen) return;
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      const offCtx = offscreen.getContext('2d');
+      if (!ctx || !offCtx) return;
 
       const now = performance.now();
       const dt = Math.min(0.08, (now - lastTimeRef.current) / 1000);
@@ -226,16 +282,33 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
         setIsNearExit(distExit < 55);
       }
 
-      // 4. Clamped Interior Camera (e.g. 800x560 room inside 640x360 viewport)
-      const viewW = TUNING.RENDER.INTERNAL_WIDTH;
-      const viewH = TUNING.RENDER.INTERNAL_HEIGHT;
+      // 4. Clamped / Centered Interior Camera with Aspect-Matched Full Screen
+      const aspect = canvas.width / Math.max(1, canvas.height);
+      const viewH = TUNING.RENDER.INTERNAL_HEIGHT; // 360
+      const viewW = Math.max(360, Math.round(viewH * aspect));
+      viewDimRef.current = { viewW, viewH };
 
-      const targetCamX = player.state.x - viewW / 2;
-      const targetCamY = player.state.y - viewH / 2;
-      const maxCamX = Math.max(0, config.roomWidth - viewW);
-      const maxCamY = Math.max(0, config.roomHeight - viewH);
-      const clampedTargetX = Math.max(0, Math.min(maxCamX, targetCamX));
-      const clampedTargetY = Math.max(0, Math.min(maxCamY, targetCamY));
+      if (offscreen.width !== viewW || offscreen.height !== viewH) {
+        offscreen.width = viewW;
+        offscreen.height = viewH;
+        offCtx.imageSmoothingEnabled = false;
+      }
+
+      let clampedTargetX: number;
+      if (config.roomWidth >= viewW) {
+        const targetCamX = player.state.x - viewW / 2;
+        clampedTargetX = Math.max(0, Math.min(config.roomWidth - viewW, targetCamX));
+      } else {
+        clampedTargetX = -(viewW - config.roomWidth) / 2;
+      }
+
+      let clampedTargetY: number;
+      if (config.roomHeight >= viewH) {
+        const targetCamY = player.state.y - viewH / 2;
+        clampedTargetY = Math.max(0, Math.min(config.roomHeight - viewH, targetCamY));
+      } else {
+        clampedTargetY = -(viewH - config.roomHeight) / 2;
+      }
 
       const camDecay = 1 - Math.exp(-TUNING.INTERIOR.CAMERA_DAMPING * dt);
       cameraRef.current.x += (clampedTargetX - cameraRef.current.x) * camDecay;
@@ -244,10 +317,15 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
       const camX = Math.round(cameraRef.current.x);
       const camY = Math.round(cameraRef.current.y);
 
-      // Render Interior Scene
+      // Render Interior Scene to offscreen buffer
+      offCtx.imageSmoothingEnabled = false;
+      offCtx.fillStyle = '#060a12';
+      offCtx.fillRect(0, 0, viewW, viewH);
+      renderer.render(offCtx, config, player, mango, activeHotspotId, isNearExit, dt, camX, camY);
+
+      // Scale Offscreen Buffer to Window Canvas Edge-to-Edge (Full Screen, Zero Letterboxing)
       ctx.imageSmoothingEnabled = false;
-      ctx.clearRect(0, 0, viewW, viewH);
-      renderer.render(ctx, config, player, mango, activeHotspotId, isNearExit, dt, camX, camY);
+      ctx.drawImage(offscreen, 0, 0, viewW, viewH, 0, 0, canvas.width, canvas.height);
 
       animId = requestAnimationFrame(loop);
     };
@@ -262,12 +340,11 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-    const scaleX = TUNING.RENDER.INTERNAL_WIDTH / rect.width;
-    const scaleY = TUNING.RENDER.INTERNAL_HEIGHT / rect.height;
-    const roomX = clickX * scaleX + cameraRef.current.x;
-    const roomY = clickY * scaleY + cameraRef.current.y;
+    const ratioX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const ratioY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    const { viewW, viewH } = viewDimRef.current;
+    const roomX = ratioX * viewW + cameraRef.current.x;
+    const roomY = ratioY * viewH + cameraRef.current.y;
 
     // Direct hotspot click
     for (const hs of config.hotspots) {
@@ -285,9 +362,9 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
   };
 
   return (
-    <div className={`relative w-full h-full flex flex-col items-center justify-center bg-[#090604] overflow-hidden select-none transition-opacity duration-300 ${isFadingOut ? 'opacity-0' : 'opacity-100'}`}>
+    <div className={`relative w-full h-full bg-[#060a12] overflow-hidden select-none transition-opacity duration-300 ${isFadingOut ? 'opacity-0' : 'opacity-100'}`}>
       {/* 1. RETRO TOP NAV BAR */}
-      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-3 bg-[#180f08]/90 border-b-2 border-[#3d2011] backdrop-blur-xs font-pixel">
+      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-3 bg-[#180f08]/90 border-b-2 border-[#3d2011] backdrop-blur-xs font-pixel shadow-lg">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 rounded bg-[#2e180d] border border-[#f59e0b] flex items-center justify-center text-[#f59e0b] shadow-inner">
             {config.id === 'coffee_shop' && <Coffee className="w-4 h-4" />}
@@ -306,27 +383,33 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
           </div>
         </div>
 
-        {/* Exit Button */}
-        <button
-          onClick={triggerExit}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2e180d] hover:bg-[#452312] text-[#fde047] border border-[#f59e0b] text-[8px] transition-colors shadow-md"
-          title="Return to Town (Esc)"
-        >
-          <span>EXIT TO TOWN</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        {/* Actions: Fullscreen & Exit Button */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleFullscreen}
+            className="p-1.5 bg-[#2e180d] hover:bg-[#452312] text-slate-300 hover:text-[#fde047] border border-[#f59e0b]/50 text-[8px] transition-colors shadow-md flex items-center justify-center"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen (F11)'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-[#fde047]" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
+
+          <button
+            onClick={triggerExit}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2e180d] hover:bg-[#452312] text-[#fde047] border border-[#f59e0b] text-[8px] transition-colors shadow-md"
+            title="Return to Town (Esc)"
+          >
+            <span>EXIT TO TOWN</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </header>
 
-      {/* 2. EXPLORABLE CANVAS ROOM */}
-      <div className="relative border-4 border-[#3d2011] shadow-[0_20px_60px_rgba(0,0,0,0.95)] rounded overflow-hidden mt-10">
-        <canvas
-          ref={canvasRef}
-          width={TUNING.RENDER.INTERNAL_WIDTH}
-          height={TUNING.RENDER.INTERNAL_HEIGHT}
-          onClick={handleCanvasClick}
-          className="cursor-pointer [image-rendering:pixelated] max-w-full max-h-[75vh] aspect-[16/9]"
-        />
-      </div>
+      {/* 2. EXPLORABLE CANVAS ROOM (Full Screen Edge-to-Edge) */}
+      <canvas
+        ref={canvasRef}
+        onClick={handleCanvasClick}
+        className="absolute inset-0 w-full h-full cursor-crosshair [image-rendering:pixelated]"
+      />
 
       {/* 3. DIALOGUE & INSPECTION MODAL OVERLAY */}
       {modalType && (

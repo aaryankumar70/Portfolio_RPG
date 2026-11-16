@@ -32,7 +32,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
-  const viewportRef = useRef<{ scale: number; destX: number; destY: number }>({ scale: 1, destX: 0, destY: 0 });
+  const viewportRef = useRef<{ scale: number; destX: number; destY: number; viewW: number; viewH: number }>({
+    scale: 1,
+    destX: 0,
+    destY: 0,
+    viewW: TUNING.RENDER.INTERNAL_WIDTH,
+    viewH: TUNING.RENDER.INTERNAL_HEIGHT
+  });
   const showDebugRef = useRef<boolean>(false);
   const fpsRef = useRef<number>(60);
 
@@ -137,23 +143,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    const canvasPxX = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const canvasPxY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const ratioX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const ratioY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
 
-    const { scale, destX, destY } = viewportRef.current;
-    const internalX = Math.floor((canvasPxX - destX) / scale);
-    const internalY = Math.floor((canvasPxY - destY) / scale);
-
-    // Ignore clicks on letterbox borders
-    if (
-      internalX < 0 ||
-      internalX >= TUNING.RENDER.INTERNAL_WIDTH ||
-      internalY < 0 ||
-      internalY >= TUNING.RENDER.INTERNAL_HEIGHT
-    ) {
-      return;
-    }
+    const { viewW, viewH } = viewportRef.current;
+    const internalX = Math.floor(ratioX * viewW);
+    const internalY = Math.floor(ratioY * viewH);
 
     const worldTargetX = internalX + Math.round(cameraRef.current.x);
     const worldTargetY = internalY + Math.round(cameraRef.current.y);
@@ -203,8 +198,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       const npcManager = npcManagerRef.current;
       const particles = particlesRef.current;
 
-      const viewW = TUNING.RENDER.INTERNAL_WIDTH;
+      // Aspect-matched virtual resolution to fill 100% of the screen without letterboxing
+      const aspect = canvas.width / Math.max(1, canvas.height);
       const viewH = TUNING.RENDER.INTERNAL_HEIGHT;
+      const viewW = Math.max(360, Math.round(viewH * aspect));
+
+      if (offscreen.width !== viewW || offscreen.height !== viewH) {
+        offscreen.width = viewW;
+        offscreen.height = viewH;
+        const oCtx = offscreen.getContext('2d');
+        if (oCtx) oCtx.imageSmoothingEnabled = false;
+      }
 
       // 1. Update Player Physics & Collisions (Delta Time based)
       const isPaused = activeBuildingModal !== null;
@@ -349,7 +353,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
         offCtx.fillStyle = '#38bdf8';
         const ms = (1000 / Math.max(1, fpsRef.current)).toFixed(1);
-        offCtx.fillText(`FPS: ${fpsRef.current.toFixed(1)} (${ms}ms) | 640x360`, panelX + 8, panelY + 27);
+        offCtx.fillText(`FPS: ${fpsRef.current.toFixed(1)} (${ms}ms) | ${viewW}x${viewH}`, panelX + 8, panelY + 27);
 
         offCtx.fillStyle = '#a7f3d0';
         offCtx.fillText(`Player: X:${player.state.x.toFixed(0)} Y:${player.state.y.toFixed(0)} | ${player.state.direction}`, panelX + 8, panelY + 41);
@@ -358,27 +362,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         offCtx.fillText(`Camera: X:${camX} Y:${camY}`, panelX + 8, panelY + 55);
 
         offCtx.fillStyle = '#f472b6';
-        const entCount = buildings.length + npcManager.npcs.length + 2 + 34;
-        offCtx.fillText(`Entities: ${entCount} | Hitboxes: ACTIVE`, panelX + 8, panelY + 67);
+        offCtx.fillText(`Display: ${canvas.width}x${canvas.height} | Edge-to-Edge`, panelX + 8, panelY + 67);
 
         offCtx.restore();
       }
 
-      // 8. Integer-Scale Offscreen Buffer to Window Canvas with Letterboxing
-      const scaleX = canvas.width / viewW;
-      const scaleY = canvas.height / viewH;
-      const integerScale = Math.max(1, Math.floor(Math.min(scaleX, scaleY)));
-      const destW = viewW * integerScale;
-      const destH = viewH * integerScale;
-      const destX = Math.floor((canvas.width - destW) / 2);
-      const destY = Math.floor((canvas.height - destH) / 2);
-
-      viewportRef.current = { scale: integerScale, destX, destY };
+      // 8. Scale Offscreen Buffer to Window Canvas Edge-to-Edge (Full Screen, Zero Letterboxing)
+      viewportRef.current = {
+        scale: canvas.height / viewH,
+        destX: 0,
+        destY: 0,
+        viewW,
+        viewH
+      };
 
       ctx.imageSmoothingEnabled = false;
-      ctx.fillStyle = '#090e17';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(offscreen, 0, 0, viewW, viewH, destX, destY, destW, destH);
+      ctx.drawImage(offscreen, 0, 0, viewW, viewH, 0, 0, canvas.width, canvas.height);
 
       animId = requestAnimationFrame(loop);
     };

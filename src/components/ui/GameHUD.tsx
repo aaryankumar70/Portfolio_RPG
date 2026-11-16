@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Heart,
   Zap,
@@ -8,6 +8,8 @@ import {
   Settings,
   Volume2,
   VolumeX,
+  Maximize2,
+  Minimize2,
   Bot,
   ExternalLink,
   ChevronRight,
@@ -67,6 +69,26 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   onFastTravelToTownSquare
 }) => {
   const [showMobileControls, setShowMobileControls] = useState<boolean>(true);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(
+    Boolean(typeof document !== 'undefined' && document.fullscreenElement)
+  );
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    soundManager.playClick();
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   // Active ongoing quest (e.g. Analyze Sales Dashboard)
   const ongoingQuest = quests.find(q => q.id === 'quest_sales') || quests[0];
@@ -165,6 +187,14 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             title={isSoundMuted ? 'Unmute Audio' : 'Mute Audio'}
           >
             {isSoundMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+          </button>
+
+          <button
+            onClick={toggleFullscreen}
+            className="p-1 text-slate-400 hover:text-[#fde047] transition-colors ml-1"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen (F11)'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-[#fde047]" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
         </div>
       </nav>
