@@ -22,7 +22,8 @@ import {
   SKILL_CATEGORIES,
   EDUCATION_RECORDS,
   CERTIFICATIONS,
-  ARYAN_STATS
+  ARYAN_STATS,
+  NON_TECHNICAL_SKILLS
 } from '../../data/portfolioData';
 
 interface PortfolioViewProps {
@@ -268,6 +269,49 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ onReturnToGame }) 
                           style={{ width: `${s.level}%` }}
                         />
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Non-Technical & Leadership Skills (The Under-Portal Dome) */}
+        <section className="space-y-6">
+          <div>
+            <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-indigo-400" />
+              <span>Human & Non-Technical Mastery</span>
+              <span className="text-xs px-2.5 py-0.5 bg-indigo-950/80 text-indigo-300 border border-indigo-700/50 rounded-full font-mono">
+                The Under-Portal Dome
+              </span>
+            </h3>
+            <p className="text-sm text-slate-400">Leadership, strategic communication, product design taste, and engineering principles.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {NON_TECHNICAL_SKILLS.map((nts) => (
+              <div
+                key={nts.id}
+                className="bg-[#0f172a] border border-indigo-950 hover:border-indigo-500/60 transition-all rounded-xl p-5 space-y-3 shadow-lg"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{nts.icon}</span>
+                    <h4 className="font-bold text-indigo-200 text-sm leading-snug">{nts.title}</h4>
+                  </div>
+                  <span className="text-[9px] px-2 py-0.5 bg-indigo-950 text-indigo-300 border border-indigo-800 rounded font-mono shrink-0">
+                    {nts.badge}
+                  </span>
+                </div>
+                <p className="text-xs text-amber-300 font-medium">{nts.summary}</p>
+                <p className="text-xs text-slate-300 leading-relaxed">{nts.description}</p>
+                <div className="pt-2 border-t border-slate-800/80 space-y-1">
+                  {nts.pillars.map((p, idx) => (
+                    <div key={idx} className="flex items-start gap-1.5 text-[11px] text-slate-400">
+                      <span className="text-indigo-400">✦</span>
+                      <span>{p}</span>
                     </div>
                   ))}
                 </div>

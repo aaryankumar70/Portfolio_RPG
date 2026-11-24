@@ -2253,7 +2253,385 @@ export const POST_OFFICE_CONFIG: InteriorConfig = {
 };
 
 // -------------------------------------------------------------------
-// MAP OF ALL 12 INTERIORS
+// 13. UNDER-PORTAL DOME INTERIOR CONFIG (NON-TECHNICAL SKILLS REALM)
+// -------------------------------------------------------------------
+export const PORTAL_DOME_CONFIG: InteriorConfig = {
+  id: 'portal_dome',
+  name: 'The Under-Portal Dome',
+  subtitle: 'Sanctuary of Human & Non-Technical Skills',
+  district: 'Aether Subterrane',
+  themeColor: '#818cf8',
+  roomWidth: 800,
+  roomHeight: 560,
+  floorType: 'cyber',
+  entrySpawn: { x: 400, y: 440, facing: 'up' },
+  exitDoor: { x: 360, y: 480, w: 80, h: 40, prompt: 'Step through Portal (Return to Overworld)' },
+  collisionBoxes: [
+    // Outer Chamber Bounds
+    { x: 0, y: 0, w: 800, h: 120 },
+    { x: 0, y: 0, w: 50, h: 560 },
+    { x: 750, y: 0, w: 50, h: 560 },
+    { x: 0, y: 520, w: 340, h: 40 },
+    { x: 460, y: 520, w: 340, h: 40 },
+
+    // Skill Station Pedestal Collisions
+    { x: 120, y: 190, w: 50, h: 36 },
+    { x: 640, y: 190, w: 50, h: 36 },
+    { x: 120, y: 350, w: 50, h: 36 },
+    { x: 640, y: 350, w: 50, h: 36 },
+    { x: 280, y: 150, w: 50, h: 36 },
+    { x: 480, y: 150, w: 50, h: 36 },
+    { x: 385, y: 225, w: 30, h: 30 }
+  ],
+  npc: {
+    id: 'orion_archon',
+    name: 'Archon Orion',
+    role: 'Guardian of the Mind',
+    x: 400,
+    y: 235,
+    facing: 'down',
+    spritePath: '/assets/npcs/elder_sage.png',
+    dialogues: [
+      'Welcome, Aryan, to the Under-Portal Dome! True mastery in engineering goes far beyond code syntax.',
+      'Empathy, strategic storytelling, agile leadership, and creative taste are what transform technical solutions into world-changing movements.',
+      'Inspect each pedestal to explore your human abilities, or approach the Inscription Altar to add your personal non-technical disciplines.'
+    ],
+    choices: [
+      { text: 'Tell me about Engineering Leadership', action: 'inspect_leadership' },
+      { text: 'Inscribe Custom Non-Technical Skills', action: 'inspect_custom_skills' }
+    ]
+  },
+  hotspots: [
+    {
+      id: 'inspect_leadership',
+      name: 'Leadership & Mentorship Sanctum',
+      prompt: 'Press [E] Inspect Leadership',
+      x: 145,
+      y: 210,
+      radius: 48,
+      action: 'inspect_leadership'
+    },
+    {
+      id: 'inspect_communication',
+      name: 'Strategic Storytelling Archive',
+      prompt: 'Press [E] Inspect Communication',
+      x: 665,
+      y: 210,
+      radius: 48,
+      action: 'inspect_communication'
+    },
+    {
+      id: 'inspect_creativity',
+      name: 'Creative Product & UX Dais',
+      prompt: 'Press [E] Inspect Design & Taste',
+      x: 145,
+      y: 370,
+      radius: 48,
+      action: 'inspect_creativity'
+    },
+    {
+      id: 'inspect_critical_thinking',
+      name: 'First-Principles Obelisk',
+      prompt: 'Press [E] Inspect Problem Decomposition',
+      x: 665,
+      y: 370,
+      radius: 48,
+      action: 'inspect_critical_thinking'
+    },
+    {
+      id: 'inspect_adaptability',
+      name: 'Curiosity & Growth Prism',
+      prompt: 'Press [E] Inspect Adaptability',
+      x: 305,
+      y: 170,
+      radius: 48,
+      action: 'inspect_adaptability'
+    },
+    {
+      id: 'inspect_custom_skills',
+      name: "Aryan's Custom Skill Inscription Vault",
+      prompt: 'Press [E] Open Custom Skills Vault',
+      x: 505,
+      y: 170,
+      radius: 48,
+      action: 'inspect_custom_skills'
+    }
+  ],
+  furniture: [
+    // 1. Live Return Portal Dais (Gateway to Town)
+    {
+      id: 'return_portal_dais',
+      name: 'Luminescent Overworld Portal',
+      type: 'portal',
+      x: 350,
+      y: 470,
+      w: 100,
+      h: 50,
+      solid: false,
+      draw: (c, timer) => {
+        const cx = 400;
+        const cy = 495;
+
+        // Base stone runic dais
+        c.fillStyle = '#0f172a';
+        c.beginPath();
+        c.ellipse(cx, cy, 48, 22, 0, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = '#6366f1';
+        c.lineWidth = 3;
+        c.stroke();
+
+        // Animated swirling rings
+        for (let r = 0; r < 3; r++) {
+          const rot = timer * (1.2 + r * 0.4) * (r % 2 === 0 ? 1 : -1);
+          const rx = 36 - r * 9;
+          const ry = 16 - r * 4;
+          c.save();
+          c.translate(cx, cy);
+          c.rotate(rot);
+          c.strokeStyle = r === 0 ? 'rgba(129, 140, 248, 0.85)' : r === 1 ? 'rgba(34, 211, 238, 0.9)' : 'rgba(253, 224, 71, 0.95)';
+          c.lineWidth = 2;
+          c.beginPath();
+          c.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+          c.stroke();
+          c.restore();
+        }
+
+        // Core bright vortex flare
+        const pulse = Math.sin(timer * 4) * 4;
+        const grad = c.createRadialGradient(cx, cy, 2, cx, cy, 20 + pulse);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.4, '#818cf8');
+        grad.addColorStop(0.8, '#38bdf8');
+        grad.addColorStop(1, 'transparent');
+        c.fillStyle = grad;
+        c.beginPath();
+        c.arc(cx, cy, 20 + pulse, 0, Math.PI * 2);
+        c.fill();
+      }
+    },
+
+    // 2. Leadership Station Pedestal
+    {
+      id: 'pedestal_leadership',
+      name: 'Leadership Dais',
+      type: 'pedestal',
+      x: 120,
+      y: 185,
+      w: 50,
+      h: 50,
+      solid: true,
+      draw: (c, timer) => {
+        c.fillStyle = '#1e1b4b';
+        c.fillRect(120, 195, 50, 36);
+        c.strokeStyle = '#f59e0b';
+        c.lineWidth = 2;
+        c.strokeRect(120, 195, 50, 36);
+
+        // Hovering glowing crown emblem
+        const hover = Math.sin(timer * 3 + 1) * 3;
+        c.font = '16px sans-serif';
+        c.textAlign = 'center';
+        c.fillText('👑', 145, 185 + hover);
+        c.font = '700 6px "Press Start 2P", monospace';
+        c.fillStyle = '#fde047';
+        c.fillText('LEAD', 145, 218);
+      }
+    },
+
+    // 3. Strategic Communication Station Pedestal
+    {
+      id: 'pedestal_communication',
+      name: 'Communication Archive',
+      type: 'pedestal',
+      x: 640,
+      y: 185,
+      w: 50,
+      h: 50,
+      solid: true,
+      draw: (c, timer) => {
+        c.fillStyle = '#082f49';
+        c.fillRect(640, 195, 50, 36);
+        c.strokeStyle = '#38bdf8';
+        c.lineWidth = 2;
+        c.strokeRect(640, 195, 50, 36);
+
+        const hover = Math.sin(timer * 3 + 2) * 3;
+        c.font = '16px sans-serif';
+        c.textAlign = 'center';
+        c.fillText('💬', 665, 185 + hover);
+        c.font = '700 6px "Press Start 2P", monospace';
+        c.fillStyle = '#7dd3fc';
+        c.fillText('STORY', 665, 218);
+      }
+    },
+
+    // 4. Creative Product & UX Station
+    {
+      id: 'pedestal_creativity',
+      name: 'UX & Taste Station',
+      type: 'pedestal',
+      x: 120,
+      y: 345,
+      w: 50,
+      h: 50,
+      solid: true,
+      draw: (c, timer) => {
+        c.fillStyle = '#311042';
+        c.fillRect(120, 355, 50, 36);
+        c.strokeStyle = '#c084fc';
+        c.lineWidth = 2;
+        c.strokeRect(120, 355, 50, 36);
+
+        const hover = Math.sin(timer * 3 + 3) * 3;
+        c.font = '16px sans-serif';
+        c.textAlign = 'center';
+        c.fillText('🎨', 145, 345 + hover);
+        c.font = '700 6px "Press Start 2P", monospace';
+        c.fillStyle = '#e9d5ff';
+        c.fillText('UI/UX', 145, 378);
+      }
+    },
+
+    // 5. Critical Thinking Obelisk
+    {
+      id: 'pedestal_critical_thinking',
+      name: 'Critical Logic Obelisk',
+      type: 'pedestal',
+      x: 640,
+      y: 345,
+      w: 50,
+      h: 50,
+      solid: true,
+      draw: (c, timer) => {
+        c.fillStyle = '#2e1065';
+        c.fillRect(640, 355, 50, 36);
+        c.strokeStyle = '#a855f7';
+        c.lineWidth = 2;
+        c.strokeRect(640, 355, 50, 36);
+
+        const hover = Math.sin(timer * 3 + 4) * 3;
+        c.font = '16px sans-serif';
+        c.textAlign = 'center';
+        c.fillText('🧠', 665, 345 + hover);
+        c.font = '700 6px "Press Start 2P", monospace';
+        c.fillStyle = '#d8b4fe';
+        c.fillText('LOGIC', 665, 378);
+      }
+    },
+
+    // 6. Adaptability & Curiosity Prism
+    {
+      id: 'pedestal_adaptability',
+      name: 'Adaptability Prism',
+      type: 'pedestal',
+      x: 280,
+      y: 145,
+      w: 50,
+      h: 50,
+      solid: true,
+      draw: (c, timer) => {
+        c.fillStyle = '#064e3b';
+        c.fillRect(280, 155, 50, 36);
+        c.strokeStyle = '#34d399';
+        c.lineWidth = 2;
+        c.strokeRect(280, 155, 50, 36);
+
+        const hover = Math.sin(timer * 3 + 5) * 3;
+        c.font = '16px sans-serif';
+        c.textAlign = 'center';
+        c.fillText('🧭', 305, 145 + hover);
+        c.font = '700 6px "Press Start 2P", monospace';
+        c.fillStyle = '#a7f3d0';
+        c.fillText('ADAPT', 305, 178);
+      }
+    },
+
+    // 7. Aryan's Personal Skill Inscription Altar (Ready to Add Later)
+    {
+      id: 'altar_custom_skills',
+      name: "Aryan's Custom Inscription Altar",
+      type: 'altar',
+      x: 480,
+      y: 145,
+      w: 50,
+      h: 50,
+      solid: true,
+      draw: (c, timer) => {
+        c.fillStyle = '#451a03';
+        c.fillRect(480, 155, 50, 36);
+        c.strokeStyle = '#f59e0b';
+        c.lineWidth = 2;
+        c.strokeRect(480, 155, 50, 36);
+
+        // Radiant golden glow
+        const pulse = Math.sin(timer * 4) * 0.2 + 0.8;
+        c.save();
+        c.shadowColor = '#f59e0b';
+        c.shadowBlur = 10 * pulse;
+        const hover = Math.sin(timer * 3 + 6) * 3;
+        c.font = '16px sans-serif';
+        c.textAlign = 'center';
+        c.fillText('✍️', 505, 145 + hover);
+        c.font = '700 6px "Press Start 2P", monospace';
+        c.fillStyle = '#fef08a';
+        c.fillText('VAULT', 505, 178);
+        c.restore();
+      }
+    },
+
+    // 8. Celestial Corner Braziers
+    {
+      id: 'brazier_nw',
+      name: 'Aether Flame',
+      type: 'brazier',
+      x: 80,
+      y: 140,
+      w: 24,
+      h: 24,
+      solid: false,
+      draw: (c, timer) => {
+        c.fillStyle = '#1e293b';
+        c.fillRect(86, 152, 12, 10);
+        const fH = Math.sin(timer * 6) * 3 + 12;
+        const grad = c.createRadialGradient(92, 146, 2, 92, 146, fH);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.5, '#818cf8');
+        grad.addColorStop(1, 'transparent');
+        c.fillStyle = grad;
+        c.beginPath();
+        c.arc(92, 146, fH, 0, Math.PI * 2);
+        c.fill();
+      }
+    },
+    {
+      id: 'brazier_ne',
+      name: 'Aether Flame',
+      type: 'brazier',
+      x: 696,
+      y: 140,
+      w: 24,
+      h: 24,
+      solid: false,
+      draw: (c, timer) => {
+        c.fillStyle = '#1e293b';
+        c.fillRect(702, 152, 12, 10);
+        const fH = Math.sin(timer * 6 + 1) * 3 + 12;
+        const grad = c.createRadialGradient(708, 146, 2, 708, 146, fH);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.5, '#38bdf8');
+        grad.addColorStop(1, 'transparent');
+        c.fillStyle = grad;
+        c.beginPath();
+        c.arc(708, 146, fH, 0, Math.PI * 2);
+        c.fill();
+      }
+    }
+  ]
+};
+
+// -------------------------------------------------------------------
+// MAP OF ALL 13 INTERIORS
 // -------------------------------------------------------------------
 export const INTERIOR_CONFIGS: Record<string, InteriorConfig> = {
   coffee_shop: COFFEE_SHOP_CONFIG,
@@ -2267,5 +2645,6 @@ export const INTERIOR_CONFIGS: Record<string, InteriorConfig> = {
   ml_lab: ML_LAB_CONFIG,
   garden: GARDEN_CONFIG,
   boss_arena: BOSS_ARENA_CONFIG,
-  post_office: POST_OFFICE_CONFIG
+  post_office: POST_OFFICE_CONFIG,
+  portal_dome: PORTAL_DOME_CONFIG
 };

@@ -39,7 +39,8 @@ import {
   INITIAL_QUESTS,
   EDUCATION_RECORDS,
   CERTIFICATIONS,
-  GARDEN_FACTS
+  GARDEN_FACTS,
+  NON_TECHNICAL_SKILLS
 } from '../../data/portfolioData';
 import { ActiveBuff } from '../../types';
 
@@ -372,6 +373,7 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
             {config.id === 'python_cave' && <Code className="w-4 h-4" />}
             {config.id === 'sql_mines' && <Database className="w-4 h-4" />}
             {config.id === 'blacksmith' && <Sword className="w-4 h-4" />}
+            {config.id === 'portal_dome' && <Sparkles className="w-4 h-4 text-indigo-400" />}
           </div>
           <div>
             <h1 className="text-xs sm:text-sm font-bold text-[#fde047] tracking-wider uppercase">
@@ -442,6 +444,12 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
                   {modalType === 'open_python_libs' && 'Python Microservices & Libraries'}
                   {modalType === 'open_sql_schemas' && 'Relational Database Schemas'}
                   {modalType === 'open_weapons' && 'Weaponsmith Skills Arsenal'}
+                  {modalType === 'inspect_leadership' && 'Leadership & Team Mentorship'}
+                  {modalType === 'inspect_communication' && 'Strategic Storytelling & Communication'}
+                  {modalType === 'inspect_creativity' && 'Creative Product & UI/UX Taste'}
+                  {modalType === 'inspect_critical_thinking' && 'Critical Thinking & First-Principles Logic'}
+                  {modalType === 'inspect_adaptability' && 'Adaptability & Continuous Curiosity'}
+                  {modalType === 'inspect_custom_skills' && "Aryan's Custom Inscription Vault (Add Later)"}
                   {modalType.startsWith('talk_') && (config.npc ? `${config.npc.name} (${config.npc.role})` : 'Conversation')}
                 </span>
               </h2>
@@ -962,6 +970,235 @@ export const InteriorGameCanvas: React.FC<InteriorGameCanvasProps> = ({
                   <p className="font-sans text-xs text-slate-300 max-w-md mx-auto">
                     The roaring oak flames warm your fingertips. Your stamina is replenished and your resolve to conquer upcoming quests is doubled!
                   </p>
+                </div>
+              )}
+
+              {/* ------------------------------------------------------------- */}
+              {/* UNDER-PORTAL DOME: NON-TECHNICAL SKILL STATIONS               */}
+              {/* ------------------------------------------------------------- */}
+
+              {/* 1. Leadership & Team Mentorship */}
+              {modalType === 'inspect_leadership' && (
+                <div className="space-y-4">
+                  {(() => {
+                    const skill = NON_TECHNICAL_SKILLS.find(s => s.id === 'leadership_mentorship')!;
+                    return (
+                      <div className="p-4 bg-[#14122d] border-2 border-[#818cf8] rounded space-y-3 shadow-lg">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{skill.icon}</span>
+                            <span className="font-bold text-indigo-200 text-sm">{skill.title}</span>
+                          </div>
+                          <span className="text-[8px] px-2.5 py-1 bg-indigo-950 text-indigo-300 border border-indigo-500 font-pixel">
+                            {skill.badge}
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-300 font-pixel text-[9px]">{skill.summary}</p>
+                        <p className="text-[11px] text-slate-200 leading-relaxed">{skill.description}</p>
+                        <div className="space-y-1.5 pt-2 border-t border-indigo-900/60">
+                          <p className="text-[9px] font-pixel text-indigo-400">CORE LEADERSHIP PILLARS:</p>
+                          {skill.pillars.map((p, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
+                              <span className="text-amber-400">✦</span>
+                              <span>{p}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* 2. Strategic Communication & Tech Storytelling */}
+              {modalType === 'inspect_communication' && (
+                <div className="space-y-4">
+                  {(() => {
+                    const skill = NON_TECHNICAL_SKILLS.find(s => s.id === 'strategic_communication')!;
+                    return (
+                      <div className="p-4 bg-[#0a1e2d] border-2 border-[#38bdf8] rounded space-y-3 shadow-lg">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{skill.icon}</span>
+                            <span className="font-bold text-sky-200 text-sm">{skill.title}</span>
+                          </div>
+                          <span className="text-[8px] px-2.5 py-1 bg-sky-950 text-sky-300 border border-sky-500 font-pixel">
+                            {skill.badge}
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-300 font-pixel text-[9px]">{skill.summary}</p>
+                        <p className="text-[11px] text-slate-200 leading-relaxed">{skill.description}</p>
+                        <div className="space-y-1.5 pt-2 border-t border-sky-900/60">
+                          <p className="text-[9px] font-pixel text-sky-400">STORYTELLING & SYNTHESIS PILLARS:</p>
+                          {skill.pillars.map((p, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
+                              <span className="text-sky-400">✦</span>
+                              <span>{p}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* 3. Product Taste, UI/UX & Visual Aesthetics */}
+              {modalType === 'inspect_creativity' && (
+                <div className="space-y-4">
+                  {(() => {
+                    const skill = NON_TECHNICAL_SKILLS.find(s => s.id === 'product_creative_sense')!;
+                    return (
+                      <div className="p-4 bg-[#230c33] border-2 border-[#c084fc] rounded space-y-3 shadow-lg">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{skill.icon}</span>
+                            <span className="font-bold text-purple-200 text-sm">{skill.title}</span>
+                          </div>
+                          <span className="text-[8px] px-2.5 py-1 bg-purple-950 text-purple-300 border border-purple-500 font-pixel">
+                            {skill.badge}
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-300 font-pixel text-[9px]">{skill.summary}</p>
+                        <p className="text-[11px] text-slate-200 leading-relaxed">{skill.description}</p>
+                        <div className="space-y-1.5 pt-2 border-t border-purple-900/60">
+                          <p className="text-[9px] font-pixel text-purple-400">DESIGN & EXPERIENCE PRINCIPLES:</p>
+                          {skill.pillars.map((p, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
+                              <span className="text-purple-400">✦</span>
+                              <span>{p}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* 4. Critical Thinking & Problem Decomposition */}
+              {modalType === 'inspect_critical_thinking' && (
+                <div className="space-y-4">
+                  {(() => {
+                    const skill = NON_TECHNICAL_SKILLS.find(s => s.id === 'critical_thinking')!;
+                    return (
+                      <div className="p-4 bg-[#1f0d38] border-2 border-[#a855f7] rounded space-y-3 shadow-lg">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{skill.icon}</span>
+                            <span className="font-bold text-fuchsia-200 text-sm">{skill.title}</span>
+                          </div>
+                          <span className="text-[8px] px-2.5 py-1 bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500 font-pixel">
+                            {skill.badge}
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-300 font-pixel text-[9px]">{skill.summary}</p>
+                        <p className="text-[11px] text-slate-200 leading-relaxed">{skill.description}</p>
+                        <div className="space-y-1.5 pt-2 border-t border-fuchsia-900/60">
+                          <p className="text-[9px] font-pixel text-fuchsia-400">FIRST-PRINCIPLES DEBUGGING PILLARS:</p>
+                          {skill.pillars.map((p, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
+                              <span className="text-fuchsia-400">✦</span>
+                              <span>{p}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* 5. Adaptability & Continuous Curiosity */}
+              {modalType === 'inspect_adaptability' && (
+                <div className="space-y-4">
+                  {(() => {
+                    const skill = NON_TECHNICAL_SKILLS.find(s => s.id === 'adaptability_curiosity')!;
+                    return (
+                      <div className="p-4 bg-[#082a20] border-2 border-[#34d399] rounded space-y-3 shadow-lg">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{skill.icon}</span>
+                            <span className="font-bold text-emerald-200 text-sm">{skill.title}</span>
+                          </div>
+                          <span className="text-[8px] px-2.5 py-1 bg-emerald-950 text-emerald-300 border border-emerald-500 font-pixel">
+                            {skill.badge}
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-300 font-pixel text-[9px]">{skill.summary}</p>
+                        <p className="text-[11px] text-slate-200 leading-relaxed">{skill.description}</p>
+                        <div className="space-y-1.5 pt-2 border-t border-emerald-900/60">
+                          <p className="text-[9px] font-pixel text-emerald-400">AGILITY & GROWTH MINDSET:</p>
+                          {skill.pillars.map((p, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
+                              <span className="text-emerald-400">✦</span>
+                              <span>{p}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* 6. Aryan's Personal Skill Inscription Altar (Ready to Add Later) */}
+              {modalType === 'inspect_custom_skills' && (
+                <div className="space-y-4">
+                  {(() => {
+                    const skill = NON_TECHNICAL_SKILLS.find(s => s.id === 'custom_user_skills')!;
+                    return (
+                      <div className="p-4 bg-[#2e1707] border-2 border-[#f59e0b] rounded space-y-3 shadow-lg">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{skill.icon}</span>
+                            <span className="font-bold text-amber-300 text-sm">{skill.title}</span>
+                          </div>
+                          <span className="text-[8px] px-2.5 py-1 bg-amber-950 text-amber-300 border border-amber-600 font-pixel">
+                            {skill.badge}
+                          </span>
+                        </div>
+                        <p className="text-xs text-yellow-300 font-pixel text-[9px]">{skill.summary}</p>
+                        <p className="text-[11px] text-slate-200 leading-relaxed">{skill.description}</p>
+
+                        {/* Developer Guide Box */}
+                        <div className="p-3 bg-[#170a02] border border-[#d97706]/70 rounded space-y-2">
+                          <div className="flex items-center gap-2 text-amber-400 font-pixel text-[9px]">
+                            <span>📜</span>
+                            <span>HOW ARYAN CAN ADD CUSTOM SKILLS LATER:</span>
+                          </div>
+                          <p className="text-[11px] text-slate-300">
+                            Whenever you want to add new non-technical skills, open <code className="px-1.5 py-0.5 bg-black/60 text-amber-300 border border-amber-800 rounded font-mono text-[10px]">src/data/portfolioData.ts</code> and append your skill to <code className="text-sky-300 font-mono">NON_TECHNICAL_SKILLS</code>:
+                          </p>
+                          <pre className="p-2.5 bg-black/85 font-mono text-[9px] text-emerald-400 border border-emerald-900 rounded overflow-x-auto leading-relaxed">
+{`{
+  id: 'negotiation_strategy',
+  title: 'Strategic Negotiation & Deal Structuring',
+  badge: 'BUSINESS & VALUE',
+  category: 'Partnership Alignment',
+  icon: '🤝',
+  summary: 'Aligning technology milestones with business value...',
+  description: 'Experienced in vendor evaluation, team budgeting, and aligning deliverables...',
+  pillars: [
+    'Value-based compromise: Aligning engineering roadmaps with business urgency',
+    'Vendor SLA negotiations: Benchmarking cloud GPU and API costs'
+  ]
+}`}
+                          </pre>
+                        </div>
+
+                        <div className="space-y-1.5 pt-1">
+                          <p className="text-[9px] font-pixel text-amber-400">CUSTOM REALM CAPABILITIES:</p>
+                          {skill.pillars.map((p, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
+                              <span className="text-yellow-400">✦</span>
+                              <span>{p}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

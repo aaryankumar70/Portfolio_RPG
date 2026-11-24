@@ -12,7 +12,8 @@ export type BuildingId =
   | 'analytics_tower'
   | 'ml_lab'
   | 'boss_arena'
-  | 'post_office';
+  | 'post_office'
+  | 'portal_dome';
 
 export interface CollisionBox {
   x: number;

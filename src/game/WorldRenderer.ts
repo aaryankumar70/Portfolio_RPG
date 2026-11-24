@@ -185,6 +185,10 @@ export class WorldRenderer {
     // 11. River Crossing Path: Blacksmith East over Timber Bridge
     ctx.moveTo(2300 - cameraX, 930 - cameraY);
     ctx.lineTo(2620 - cameraX, 930 - cameraY);
+
+    // 12. Mystical Sanctuary Path to Portal Dome (1580, 1040)
+    ctx.moveTo(1460 - cameraX, 1000 - cameraY);
+    ctx.lineTo(1580 - cameraX, 1040 - cameraY);
   }
 
   // 2. Connected Cobblestone / Dirt Road Network & Central Circular Plaza
@@ -247,7 +251,8 @@ export class WorldRenderer {
       { x: 1840, y: 1560 }, // Analytics Tower
       { x: 2300, y: 720 },  // ML Lab
       { x: 2300, y: 1530 }, // Boss Arena
-      { x: 1200, y: 1860 }  // Post Office
+      { x: 1200, y: 1860 }, // Post Office
+      { x: 1580, y: 1040 }  // Portal Dome Threshold
     ];
 
     doors.forEach((d) => {
@@ -632,6 +637,8 @@ export class WorldRenderer {
               this.drawMLLab(c, bx, by, b.width, b.height);
             } else if (b.id === 'boss_arena') {
               this.drawBossArena(c, bx, by, b.width, b.height);
+            } else if (b.id === 'portal_dome') {
+              this.drawPortalDome(c, bx, by, b.width, b.height);
             } else {
               this.drawPostOffice(c, bx, by, b.width, b.height);
             }
@@ -1612,6 +1619,200 @@ export class WorldRenderer {
     ctx.fillRect(x + 18, y + 18, w - 36, 24);
   }
 
+  // 14. The Under-Portal Dome (Live Swirling Mystic Portal Entrance)
+  private drawPortalDome(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    ctx.save();
+    const cx = x + Math.floor(w / 2);
+    const cy = y + Math.floor(h / 2);
+    const t = this.animTimer;
+
+    // 1. Arcane Base Stone Platform / Terrace
+    ctx.fillStyle = '#1e1b4b';
+    ctx.beginPath();
+    ctx.ellipse(cx, y + h - 18, Math.floor(w * 0.48), 24, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#4338ca';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Concentric glowing rune dais
+    ctx.strokeStyle = 'rgba(129, 140, 248, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, y + h - 18, Math.floor(w * 0.36), 16, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 2. Obsidian & Lapis Portal Pillars
+    const pillarW = 28;
+    const pillarH = h - 60;
+    const leftPx = x + 24;
+    const rightPx = x + w - 24 - pillarW;
+    const pillarTopY = y + 40;
+
+    // Left Pillar
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(leftPx, pillarTopY, pillarW, pillarH);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(leftPx + 4, pillarTopY, 6, pillarH);
+    ctx.strokeStyle = '#312e81';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(leftPx, pillarTopY, pillarW, pillarH);
+
+    // Right Pillar
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(rightPx, pillarTopY, pillarW, pillarH);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(rightPx + 4, pillarTopY, 6, pillarH);
+    ctx.strokeStyle = '#312e81';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(rightPx, pillarTopY, pillarW, pillarH);
+
+    // Glowing carved runes down both pillars
+    const runes = ['ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᛗ'];
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    runes.forEach((r, idx) => {
+      const ry = pillarTopY + 22 + idx * 18;
+      const pulse = (Math.sin(t * 3 + idx) + 1) * 0.5;
+      ctx.fillStyle = `rgba(129, 140, 248, ${0.4 + pulse * 0.6})`;
+      ctx.fillText(r, leftPx + pillarW / 2, ry);
+      ctx.fillStyle = `rgba(56, 189, 248, ${0.4 + pulse * 0.6})`;
+      ctx.fillText(r, rightPx + pillarW / 2, ry);
+    });
+
+    // 3. Geodesic Crystalline Dome Arch
+    ctx.beginPath();
+    ctx.arc(cx, pillarTopY + 10, (rightPx - leftPx) / 2 + 14, Math.PI, 0);
+    ctx.strokeStyle = '#4338ca';
+    ctx.lineWidth = 14;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, pillarTopY + 10, (rightPx - leftPx) / 2 + 14, Math.PI, 0);
+    ctx.strokeStyle = '#818cf8';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Geodesic glass dome facets
+    ctx.fillStyle = 'rgba(99, 102, 241, 0.18)';
+    ctx.beginPath();
+    ctx.arc(cx, pillarTopY + 10, (rightPx - leftPx) / 2 + 6, Math.PI, 0);
+    ctx.fill();
+
+    // Dome rib lines
+    ctx.strokeStyle = 'rgba(199, 210, 254, 0.45)';
+    ctx.lineWidth = 1.5;
+    for (let a = Math.PI * 0.15; a <= Math.PI * 0.85; a += Math.PI * 0.18) {
+      ctx.beginPath();
+      ctx.moveTo(cx, pillarTopY - 20);
+      const rad = (rightPx - leftPx) / 2 + 14;
+      ctx.lineTo(cx - Math.cos(a) * rad, (pillarTopY + 10) - Math.sin(a) * rad);
+      ctx.stroke();
+    }
+
+    // Apex Crown Starlight Crystal
+    const apexHover = Math.sin(t * 3) * 2;
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.moveTo(cx, y + 12 + apexHover);
+    ctx.lineTo(cx - 10, y + 26 + apexHover);
+    ctx.lineTo(cx, y + 36 + apexHover);
+    ctx.lineTo(cx + 10, y + 26 + apexHover);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // 4. THE LIVE SWIRLING COSMIC PORTAL VORTEX
+    const portalCenterX = cx;
+    const portalCenterY = cy + 12;
+    const portalRadiusX = Math.floor((rightPx - leftPx - 10) / 2);
+    const portalRadiusY = Math.floor(pillarH * 0.48);
+
+    // Layer A: Outer Void Gradient
+    const voidGrad = ctx.createRadialGradient(portalCenterX, portalCenterY, 4, portalCenterX, portalCenterY, portalRadiusX);
+    voidGrad.addColorStop(0, '#ffffff');
+    voidGrad.addColorStop(0.25, '#818cf8');
+    voidGrad.addColorStop(0.65, '#312e81');
+    voidGrad.addColorStop(0.9, '#0f172a');
+    voidGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = voidGrad;
+    ctx.beginPath();
+    ctx.ellipse(portalCenterX, portalCenterY, portalRadiusX, portalRadiusY, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Layer B: Counter-rotating Spiral Energy Arms
+    for (let layer = 0; layer < 3; layer++) {
+      const rot = t * (layer === 0 ? 1.6 : layer === 1 ? -2.2 : 3.0) + layer * 1.5;
+      ctx.save();
+      ctx.translate(portalCenterX, portalCenterY);
+      ctx.rotate(rot);
+
+      const color = layer === 0 ? 'rgba(56, 189, 248, 0.85)' : layer === 1 ? 'rgba(168, 85, 247, 0.85)' : 'rgba(253, 224, 71, 0.9)';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5 - layer * 0.5;
+
+      ctx.beginPath();
+      for (let theta = 0; theta < Math.PI * 2.5; theta += 0.2) {
+        const r = (theta / (Math.PI * 2.5)) * (portalRadiusX * 0.85);
+        const px = Math.cos(theta) * r;
+        const py = Math.sin(theta) * (r * (portalRadiusY / portalRadiusX));
+        if (theta === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Layer C: Pulsing Core Halo
+    const pulseRadius = Math.sin(t * 5) * 4 + 14;
+    const coreGrad = ctx.createRadialGradient(portalCenterX, portalCenterY, 2, portalCenterX, portalCenterY, pulseRadius);
+    coreGrad.addColorStop(0, '#ffffff');
+    coreGrad.addColorStop(0.5, '#67e8f9');
+    coreGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = coreGrad;
+    ctx.beginPath();
+    ctx.arc(portalCenterX, portalCenterY, pulseRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Layer D: Rising Animated Particle Motes
+    for (let i = 0; i < 9; i++) {
+      const pProgress = (t * 0.7 + i * 0.14) % 1.0;
+      const sparkX = portalCenterX + Math.sin(pProgress * Math.PI * 3 + i * 2) * (portalRadiusX * 0.65);
+      const sparkY = portalCenterY + portalRadiusY * 0.6 - pProgress * (portalRadiusY * 1.4);
+      const sparkAlpha = Math.sin(pProgress * Math.PI) * 0.85;
+      const sparkSize = 2 + (i % 2);
+
+      ctx.fillStyle = i % 2 === 0 ? `rgba(254, 240, 138, ${sparkAlpha})` : `rgba(167, 139, 250, ${sparkAlpha})`;
+      ctx.fillRect(Math.round(sparkX - sparkSize / 2), Math.round(sparkY - sparkSize / 2), sparkSize, sparkSize);
+    }
+
+    // 5. Flanking Floating Crystal Orbs on Pedestals
+    const drawOrbPedestal = (px: number, py: number, isRight: boolean) => {
+      ctx.fillStyle = '#1e1b4b';
+      ctx.fillRect(px, py, 16, 24);
+      ctx.strokeStyle = '#4338ca';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(px, py, 16, 24);
+
+      const orbHover = Math.sin(t * 3.5 + (isRight ? 2 : 0)) * 3;
+      const orbGrad = ctx.createRadialGradient(px + 8, py - 6 + orbHover, 1, px + 8, py - 6 + orbHover, 8);
+      orbGrad.addColorStop(0, '#ffffff');
+      orbGrad.addColorStop(0.5, isRight ? '#38bdf8' : '#c084fc');
+      orbGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = orbGrad;
+      ctx.beginPath();
+      ctx.arc(px + 8, py - 6 + orbHover, 8, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    drawOrbPedestal(leftPx - 20, y + h - 42, false);
+    drawOrbPedestal(rightPx + pillarW + 4, y + h - 42, true);
+
+    ctx.restore();
+  }
+
   // -------------------------------------------------------------
   // OVERHEAD RETRO BUILDING PLAQUE (EXACTLY MATCHING REFERENCE SCREENSHOT)
   // -------------------------------------------------------------
@@ -1831,6 +2032,9 @@ export class WorldRenderer {
       // SQL Mine Shaft Lantern
       punchHole(1850, 1120, TUNING.ATMOSPHERE.LIGHT_RADII.MINES_LANTERN, glowAlpha);
 
+      // Under-Portal Dome Cosmic Gateway
+      punchHole(1580, 955, 70, glowAlpha * 1.1);
+
       // Player small aura / lantern
       if (player) {
         punchHole(player.state.x, player.state.y, 42, 0.75);
@@ -1861,6 +2065,9 @@ export class WorldRenderer {
 
       // Python Cave arcane cyan
       crystals.forEach(cr => addColorPool(cr.x, cr.y - 10, TUNING.ATMOSPHERE.LIGHT_RADII.CRYSTAL, 'rgba(56, 189, 248, 0.45)'));
+
+      // Under-Portal Dome celestial starlight
+      addColorPool(1580, 955, 80, 'rgba(129, 140, 248, 0.50)');
 
       // Windows warm interior lighting
       windows.forEach(win => addColorPool(win.x, win.y, TUNING.ATMOSPHERE.LIGHT_RADII.WINDOW, 'rgba(251, 191, 36, 0.30)'));

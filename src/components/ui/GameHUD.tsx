@@ -151,6 +151,18 @@ export const GameHUD: React.FC<GameHUDProps> = ({
           <button
             onClick={() => {
               soundManager.playClick();
+              onEnterBuilding('portal_dome');
+            }}
+            className="px-2 py-1 text-indigo-300 hover:text-indigo-100 flex items-center gap-1 transition-colors"
+            title="Enter Under-Portal Dome (Non-Technical Skills)"
+          >
+            <span>🌀</span>
+            <span className="hidden sm:inline">Portal</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundManager.playClick();
               onEnterBuilding('boss_arena');
             }}
             className="px-2 py-1 hover:text-[#fde047] flex items-center gap-1 transition-colors"

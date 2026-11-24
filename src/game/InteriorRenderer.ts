@@ -54,7 +54,40 @@ export class InteriorRenderer {
   private drawFloor(ctx: CanvasRenderingContext2D, config: InteriorConfig) {
     const { roomWidth: rw, roomHeight: rh, floorType } = config;
 
-    if (floorType === 'wood') {
+    if (config.id === 'portal_dome') {
+      // Celestial Cosmic Mosaic with Glowing Starlight Rings
+      ctx.fillStyle = '#060814';
+      ctx.fillRect(0, 0, rw, rh);
+
+      // Radial starlight nebula
+      const nebGrad = ctx.createRadialGradient(rw / 2, rh / 2, 20, rw / 2, rh / 2, 360);
+      nebGrad.addColorStop(0, 'rgba(99, 102, 241, 0.22)');
+      nebGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.12)');
+      nebGrad.addColorStop(1, 'rgba(6, 8, 20, 0)');
+      ctx.fillStyle = nebGrad;
+      ctx.fillRect(50, 120, rw - 100, rh - 120);
+
+      // Deep subterranean obsidian tiles
+      for (let y = 120; y < rh; y += 32) {
+        for (let x = 50; x < rw - 50; x += 32) {
+          ctx.strokeStyle = 'rgba(129, 140, 248, 0.08)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, 32, 32);
+        }
+      }
+
+      // Sacred Geometry Constellation Circles
+      ctx.strokeStyle = 'rgba(129, 140, 248, 0.25)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(rw / 2, rh / 2 + 30, 160, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(253, 224, 71, 0.2)';
+      ctx.beginPath();
+      ctx.arc(rw / 2, rh / 2 + 30, 210, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (floorType === 'wood') {
       // Warm Polished Oak Floor Planks
       ctx.fillStyle = '#6b3e1b';
       ctx.fillRect(0, 0, rw, rh);
@@ -156,7 +189,51 @@ export class InteriorRenderer {
     const { roomWidth: rw, roomHeight: rh, floorType } = config;
 
     // North Wall (Height 120px)
-    if (floorType === 'wood') {
+    if (config.id === 'portal_dome') {
+      // Cosmic geodesic dome ceiling / wall
+      ctx.fillStyle = '#050713';
+      ctx.fillRect(0, 0, rw, 120);
+
+      // Starlight background
+      for (let i = 0; i < 40; i++) {
+        const sx = ((i * 37 + 19) % (rw - 100)) + 50;
+        const sy = (i * 17) % 90 + 10;
+        const tw = (Math.sin(this.animTimer * 2 + i) + 1) * 0.5;
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + tw * 0.7})`;
+        ctx.fillRect(sx, sy, 1.5, 1.5);
+      }
+
+      // Dome Rib Arches (Geodesic Glass Beams)
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 2;
+      for (let x = 100; x <= rw - 100; x += 120) {
+        ctx.beginPath();
+        ctx.moveTo(x, 116);
+        ctx.quadraticCurveTo(rw / 2, 20, rw - x, 116);
+        ctx.stroke();
+      }
+
+      // Glowing crystal spires along the wall
+      const crystalColors = ['#818cf8', '#38bdf8', '#f59e0b', '#c084fc', '#34d399'];
+      for (let idx = 0; idx < crystalColors.length; idx++) {
+        const cx = 130 + idx * 135;
+        ctx.fillStyle = crystalColors[idx];
+        ctx.beginPath();
+        ctx.moveTo(cx, 116);
+        ctx.lineTo(cx - 8, 75);
+        ctx.lineTo(cx, 45);
+        ctx.lineTo(cx + 8, 75);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Base trim
+      ctx.fillStyle = '#1e1b4b';
+      ctx.fillRect(0, 116, rw, 8);
+    } else if (floorType === 'wood') {
       ctx.fillStyle = '#3e200e';
       ctx.fillRect(0, 0, rw, 120);
       // Wall wainscoting & vertical wood paneling
@@ -466,6 +543,33 @@ export class InteriorRenderer {
 
       const forgeGlow = assetManager.getForgeGlow();
       ctx.drawImage(forgeGlow, Math.round(rw / 2 - 80), Math.round(180 - 80));
+    } else if (id === 'portal_dome') {
+      // Celestial Indigo / Starlight ambient atmosphere for Portal Dome
+      ctx.fillStyle = 'rgba(30, 27, 75, 0.32)';
+      ctx.fillRect(0, 0, rw, rh);
+
+      // Glowing cosmic aura around all skill pedestals
+      config.hotspots.forEach((hs) => {
+        const pulse = Math.sin(this.animTimer * 3 + hs.x) * 4;
+        const grad = ctx.createRadialGradient(hs.x, hs.y, 2, hs.x, hs.y, 35 + pulse);
+        grad.addColorStop(0, 'rgba(129, 140, 248, 0.35)');
+        grad.addColorStop(0.6, 'rgba(56, 189, 248, 0.15)');
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(hs.x, hs.y, 35 + pulse, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Drifting ethereal sparkle motes inside dome
+      for (let i = 0; i < 20; i++) {
+        const t = (this.animTimer * 0.4 + i * 0.12) % 1.0;
+        const px = ((i * 47) % (rw - 120)) + 60 + Math.sin(t * Math.PI * 2 + i) * 12;
+        const py = rh - t * (rh - 130) - 20;
+        const alpha = Math.sin(t * Math.PI) * 0.75;
+        ctx.fillStyle = i % 2 === 0 ? `rgba(167, 139, 250, ${alpha})` : `rgba(56, 189, 248, ${alpha})`;
+        ctx.fillRect(px, py, 2, 2);
+      }
     }
   }
 

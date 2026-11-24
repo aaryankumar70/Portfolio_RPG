@@ -260,6 +260,123 @@ export const BUILDINGS: BuildingData[] = [
     themeColor: '#14b8a6',
     bannerColor: '#0d9488',
     description: 'Town courier hub. Dispatch messages directly to Aryan, grab his resume, or connect via GitHub and LinkedIn.'
+  },
+  {
+    id: 'portal_dome',
+    name: 'Under-Portal Dome',
+    subtitle: 'Non-Technical Skills',
+    district: 'Mystic Sanctuary',
+    x: 1480,
+    y: 860,
+    width: 200,
+    height: 190,
+    doorX: 1580,
+    doorY: 1040,
+    interactionRadius: 85,
+    collisionBox: { x: 1490, y: 890, w: 180, h: 140 },
+    iconName: 'Sparkles',
+    themeColor: '#818cf8',
+    bannerColor: '#6366f1',
+    description: 'An ethereal, pulsating crystalline dome arch humming with cosmic starlight. Descend into the subterranean sanctuary of leadership, communication, and human skills.'
+  }
+];
+
+// Non-Technical & Human Skills for the Under-Portal Dome
+export interface NonTechnicalSkillItem {
+  id: string;
+  title: string;
+  badge: string;
+  category: string;
+  icon: string;
+  summary: string;
+  description: string;
+  pillars: string[];
+}
+
+export const NON_TECHNICAL_SKILLS: NonTechnicalSkillItem[] = [
+  {
+    id: 'leadership_mentorship',
+    title: 'Engineering Leadership & Mentorship',
+    badge: 'LEADERSHIP',
+    category: 'Team Dynamics & Direction',
+    icon: '👑',
+    summary: 'Guiding hackathon squads and project teams from ambiguity to high-impact production releases.',
+    description: 'Spearheaded multidisciplinary student developer teams during 36-hour competitive hackathons (such as MindPulse AI). Championed agile task prioritization, unblocked junior peers in async workflows, and fostered psychological safety so every developer could produce their best work.',
+    pillars: [
+      'Sprint Scope Prioritization: Defining the atomic "magic moment" before writing line 1',
+      'Peer Code Reviews: Constructive, empathetic feedback with zero gatekeeping',
+      'Cross-functional alignment: Translating developer estimates into stakeholder milestones'
+    ]
+  },
+  {
+    id: 'strategic_communication',
+    title: 'Strategic Communication & Tech Storytelling',
+    badge: 'COMMUNICATION',
+    category: 'Clarity & Synthesis',
+    icon: '💬',
+    summary: 'Translating complex neural models and database internals into clear, persuasive narratives.',
+    description: 'A technical solution is only as potent as its adoption. Mastered the art of distilling complex machine learning pipelines (RoBERTa transformers, vector search latency) into executive-level slides, customer value propositions, and clean technical documentation.',
+    pillars: [
+      'Executive Pitching: Demonstrating measurable ROI and latency gains to non-technical judges',
+      'Clear Technical Writing: Drafting reproducible READMEs, typed API contracts, and architecture diagrams',
+      'Active Listening: Asking probing questions to uncover the true underlying user problem'
+    ]
+  },
+  {
+    id: 'product_creative_sense',
+    title: 'Product Taste, UI/UX & Visual Aesthetics',
+    badge: 'CREATIVITY & UX',
+    category: 'Design Empathy',
+    icon: '🎨',
+    summary: 'Infusing technical rigor with intuitive ergonomics, pixel precision, and delightful interactions.',
+    description: 'Belief that developer tools and data dashboards should feel as tactile and responsive as modern video games. Dedicated to micro-interactions, responsive typography, coherent color palettes, and empathetic edge-case handling.',
+    pillars: [
+      'Human-Centered Interfaces: Designing workflows that respect user cognitive load and focus',
+      'Visual Consistency: Cohesive design tokens, pixel-perfect alignment, and snappy feedback',
+      'Rapid Prototyping: Iterating mockups with users before committing to backend database models'
+    ]
+  },
+  {
+    id: 'critical_thinking',
+    title: 'Critical Thinking & Problem Decomposition',
+    badge: 'PROBLEM SOLVING',
+    category: 'First-Principles Logic',
+    icon: '🧠',
+    summary: 'Deconstructing daunting system outages and ambiguous prompts into solvable sub-tasks.',
+    description: 'Approaching challenging software bugs and algorithmic bottlenecks by stripping away assumptions. When distributed ETL jobs stall or audio processing fails at high concurrency, systematically isolating the root cause via structured scientific debugging.',
+    pillars: [
+      'Root-Cause Analysis: 5-Whys methodology to prevent recurring bugs at the architecture layer',
+      'Occam\'s Razor in Engineering: Choosing the simplest maintainable pattern over bloated complexity',
+      'Composure Under Deadlines: Calm, methodical triage during sprint crunches and live demos'
+    ]
+  },
+  {
+    id: 'adaptability_curiosity',
+    title: 'Adaptability & Continuous Curiosity',
+    badge: 'GROWTH MINDSET',
+    category: 'Continuous Evolution',
+    icon: '🧭',
+    summary: 'Thriving in evolving ecosystems, rapidly grasping new libraries, and welcoming change.',
+    description: 'The AI and web landscapes evolve weekly. Embracing continuous learning as a daily habit — quickly benchmarking new frameworks (FastAPI, Qdrant, Vite, PyTorch AMP), reading research whitepapers, and pivoting technical strategies when better evidence arises.',
+    pillars: [
+      'Fast Ramp-Up: Building working prototypes in unfamiliar frameworks within 24 to 48 hours',
+      'Embracing Constructive Critique: Treating system refactors and code reviews as leveling-up opportunities',
+      'Intellectual Humility: Willingness to discard favorite solutions when benchmark data proves otherwise'
+    ]
+  },
+  {
+    id: 'custom_user_skills',
+    title: 'Aryan\'s Personal Skill Vault (Add Later)',
+    badge: 'CUSTOM EXPANSION',
+    category: 'Customizable Inscription Space',
+    icon: '✍️',
+    summary: 'Dedicated open realm ready for Aryan\'s additional non-technical skills, rituals, and hobbies.',
+    description: 'This pedestal is purposefully preserved for Aryan\'s personal additions! Add negotiations, public speaking, music, chess strategy, or custom leadership reflections directly in portfolioData.ts or via the in-game inscription altar.',
+    pillars: [
+      'Easy Configuration: Simply append new skill records to NON_TECHNICAL_SKILLS in src/data/portfolioData.ts',
+      'Auto-Reflected: Instantly appears with custom badge, icon, and modal dialogue inside the Portal Dome',
+      'Fully Extensible: Supports custom bullet points, project ties, and visual flair'
+    ]
   }
 ];
 
