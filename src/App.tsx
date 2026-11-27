@@ -4,9 +4,10 @@ import { GameCanvas } from './game/GameCanvas';
 import { GameHUD } from './components/ui/GameHUD';
 import { IntroSequence } from './components/ui/IntroSequence';
 import { BUILDINGS, NPCS, INITIAL_QUESTS, ARYAN_STATS } from './data/portfolioData';
-import { BuildingData, TimeOfDay, Quest, NPC } from './types';
+import { BuildingData, TimeOfDay, WeatherType, Quest, NPC } from './types';
 import { soundManager } from './audio/SoundManager';
 import { PortfolioView } from './components/ui/PortfolioView';
+import { TUNING } from './game/TUNING';
 
 // Explorable Canvas RPG Interior Environment
 import { InteriorGameCanvas } from './components/interiors/InteriorGameCanvas';
@@ -21,6 +22,8 @@ import { SettingsModal } from './components/modals/SettingsModal';
 export const App: React.FC = () => {
   const [gameStarted, setGameStarted] = useState<boolean>(false);
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('day');
+  const [weather, setWeather] = useState<WeatherType>('clear');
+  const [autoCycleEnabled, setAutoCycleEnabled] = useState<boolean>(true);
   const [activeBuilding, setActiveBuilding] = useState<string | null>(null);
   const [nearBuilding, setNearBuilding] = useState<BuildingData | null>(null);
   const [nearNPC, setNearNPC] = useState<NPC | null>(null);
@@ -98,6 +101,32 @@ export const App: React.FC = () => {
     window.dispatchEvent(new CustomEvent('teleport-player', { detail: { x: 1200, y: 890 } }));
   }, []);
 
+  // Automatic Day/Night & Weather Cycles
+  useEffect(() => {
+    if (!autoCycleEnabled || !gameStarted) return;
+
+    const timeInterval = setInterval(() => {
+      setTimeOfDay((prev) => {
+        const order = TUNING.CYCLE.TIME_ORDER;
+        const idx = order.indexOf(prev);
+        return order[(idx + 1) % order.length];
+      });
+    }, TUNING.CYCLE.DAY_PHASE_DURATION_MS);
+
+    const weatherInterval = setInterval(() => {
+      setWeather((prev) => {
+        const order = TUNING.CYCLE.WEATHER_ORDER;
+        const idx = order.indexOf(prev);
+        return order[(idx + 1) % order.length];
+      });
+    }, TUNING.CYCLE.WEATHER_PHASE_DURATION_MS);
+
+    return () => {
+      clearInterval(timeInterval);
+      clearInterval(weatherInterval);
+    };
+  }, [autoCycleEnabled, gameStarted]);
+
   // Global Keyboard Navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -162,6 +191,7 @@ export const App: React.FC = () => {
           buildings={BUILDINGS}
           npcs={NPCS}
           timeOfDay={timeOfDay}
+          weather={weather}
           onEnterBuilding={handleEnterBuilding}
           onNearBuildingChange={setNearBuilding}
           onNearNPCChange={setNearNPC}
@@ -179,6 +209,10 @@ export const App: React.FC = () => {
             maxXp={maxXp}
             timeOfDay={timeOfDay}
             onTimeOfDayChange={setTimeOfDay}
+            weather={weather}
+            onWeatherChange={setWeather}
+            autoCycleEnabled={autoCycleEnabled}
+            onToggleAutoCycle={() => setAutoCycleEnabled((prev) => !prev)}
             quests={quests}
             nearBuilding={nearBuilding}
             nearNPC={nearNPC}
@@ -244,6 +278,10 @@ export const App: React.FC = () => {
           onClose={() => setActiveModal(null)}
           timeOfDay={timeOfDay}
           onTimeOfDayChange={setTimeOfDay}
+          weather={weather}
+          onWeatherChange={setWeather}
+          autoCycleEnabled={autoCycleEnabled}
+          onToggleAutoCycle={() => setAutoCycleEnabled((prev) => !prev)}
           isSoundMuted={isSoundMuted}
           onToggleSound={handleToggleSound}
         />

@@ -1,3 +1,5 @@
+import { WeatherType } from '../types';
+
 export interface Particle {
   x: number;
   y: number;
@@ -8,51 +10,98 @@ export interface Particle {
   alpha: number;
   maxLife: number;
   life: number;
-  type: 'sakura' | 'firefly' | 'smoke' | 'spark' | 'crystal' | 'water';
+  type: 'sakura' | 'firefly' | 'smoke' | 'spark' | 'crystal' | 'water' | 'rain' | 'splash' | 'mist';
   oscillation?: number;
 }
 
 export class ParticleSystem {
   public particles: Particle[] = [];
 
-  public update(worldWidth: number, worldHeight: number, timeOfDay: string) {
+  public update(worldWidth: number, worldHeight: number, timeOfDay: string, weather: WeatherType = 'clear') {
     // Honor prefers-reduced-motion (reduce particle count to 0)
     if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       this.particles = [];
       return;
     }
 
-    // 1. Crisp falling sakura petals
+    // 1. Sakura / Leaf Breeze (heavier during sakura_breeze, light during clear)
+    const targetSakura = weather === 'sakura_breeze' ? 85 : (weather === 'rain' || weather === 'storm') ? 10 : 32;
     const sakuraCount = this.particles.filter(p => p.type === 'sakura').length;
-    if (sakuraCount < 40) {
+    if (sakuraCount < targetSakura) {
+      const windX = weather === 'sakura_breeze' ? 1.4 : weather === 'storm' ? 2.4 : 0.55;
       this.particles.push({
         x: Math.random() * worldWidth,
-        y: Math.random() * (worldHeight * 0.5),
-        vx: 0.5 + Math.random() * 0.5,
-        vy: 0.7 + Math.random() * 0.6,
+        y: Math.random() * (worldHeight * 0.65),
+        vx: windX + Math.random() * 0.6,
+        vy: 0.65 + Math.random() * 0.6,
         size: 3 + Math.floor(Math.random() * 3),
-        color: Math.random() > 0.4 ? '#f472b6' : '#fbcfe8',
+        color: Math.random() > 0.35 ? '#f472b6' : Math.random() > 0.5 ? '#fbcfe8' : '#fde047',
         alpha: 0.85,
-        maxLife: 350,
+        maxLife: 320,
         life: 0,
         type: 'sakura',
         oscillation: Math.random() * Math.PI * 2
       });
     }
 
-    // 2. Fireflies (night/sunset)
-    const targetFireflies = (timeOfDay === 'night' || timeOfDay === 'sunset') ? 35 : 8;
+    // 1b. Rain & Storm streaks
+    if (weather === 'rain' || weather === 'storm') {
+      const targetRain = weather === 'storm' ? 190 : 110;
+      const rainCount = this.particles.filter(p => p.type === 'rain').length;
+      const spawnBatch = Math.min(18, targetRain - rainCount);
+      for (let r = 0; r < spawnBatch; r++) {
+        this.particles.push({
+          x: Math.random() * (worldWidth + 200) - 100,
+          y: Math.random() * (worldHeight * 0.85),
+          vx: weather === 'storm' ? -3.2 : -1.4,
+          vy: weather === 'storm' ? 12.5 + Math.random() * 4 : 8.5 + Math.random() * 3,
+          size: weather === 'storm' ? 12 : 8,
+          color: weather === 'storm' ? '#bae6fd' : '#7dd3fc',
+          alpha: weather === 'storm' ? 0.65 : 0.48,
+          maxLife: 45 + Math.random() * 30,
+          life: 0,
+          type: 'rain'
+        });
+      }
+    }
+
+    // 1c. Drifting Mist Wisps
+    if (weather === 'mist') {
+      const mistCount = this.particles.filter(p => p.type === 'mist').length;
+      if (mistCount < 28) {
+        this.particles.push({
+          x: Math.random() * worldWidth,
+          y: 350 + Math.random() * (worldHeight - 450),
+          vx: 0.35 + Math.random() * 0.35,
+          vy: (Math.random() - 0.5) * 0.1,
+          size: 38 + Math.random() * 36,
+          color: '#e2e8f0',
+          alpha: 0.08 + Math.random() * 0.08,
+          maxLife: 340,
+          life: 0,
+          type: 'mist',
+          oscillation: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    // 2. Fireflies (night/sunset, suppressed in heavy rain/storm)
+    const targetFireflies = (weather === 'rain' || weather === 'storm')
+      ? 2
+      : (timeOfDay === 'night' || timeOfDay === 'sunset')
+        ? 45
+        : 6;
     const fireflyCount = this.particles.filter(p => p.type === 'firefly').length;
     if (fireflyCount < targetFireflies) {
       this.particles.push({
-        x: 400 + Math.random() * (worldWidth - 800),
-        y: 400 + Math.random() * (worldHeight - 600),
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
+        x: 350 + Math.random() * (worldWidth - 700),
+        y: 380 + Math.random() * (worldHeight - 550),
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
         size: 2,
-        color: '#fef08a',
-        alpha: 0.7,
-        maxLife: 200 + Math.random() * 100,
+        color: Math.random() > 0.3 ? '#fef08a' : '#86efac',
+        alpha: 0.85,
+        maxLife: 200 + Math.random() * 120,
         life: 0,
         type: 'firefly',
         oscillation: Math.random() * Math.PI * 2
@@ -160,9 +209,33 @@ export class ParticleSystem {
         p.oscillation = (p.oscillation || 0) + 0.04;
         p.x += p.vx + Math.sin(p.oscillation) * 0.4;
         p.y += p.vy;
+      } else if (p.type === 'rain') {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.life >= p.maxLife - 1 && Math.random() < 0.35) {
+          this.particles.push({
+            x: p.x,
+            y: p.y,
+            vx: 0,
+            vy: 0,
+            size: 2,
+            color: '#bae6fd',
+            alpha: 0.6,
+            maxLife: 10,
+            life: 0,
+            type: 'splash'
+          });
+        }
+      } else if (p.type === 'splash') {
+        p.size += 0.65;
+        p.alpha = Math.max(0, 0.6 * (1 - p.life / p.maxLife));
+      } else if (p.type === 'mist') {
+        p.oscillation = (p.oscillation || 0) + 0.015;
+        p.x += p.vx;
+        p.y += Math.sin(p.oscillation) * 0.15;
       }
 
-      if (p.life >= p.maxLife || p.y > worldHeight + 30 || p.x > worldWidth + 30) {
+      if (p.life >= p.maxLife || p.y > worldHeight + 30 || p.x > worldWidth + 120) {
         this.particles.splice(i, 1);
       }
     }
@@ -173,7 +246,8 @@ export class ParticleSystem {
       const screenX = Math.floor(p.x - cameraX);
       const screenY = Math.floor(p.y - cameraY);
 
-      if (screenX < -20 || screenX > ctx.canvas.width + 20 || screenY < -20 || screenY > ctx.canvas.height + 20) {
+      const pad = p.type === 'mist' ? 80 : 20;
+      if (screenX < -pad || screenX > ctx.canvas.width + pad || screenY < -pad || screenY > ctx.canvas.height + pad) {
         continue;
       }
 
@@ -181,11 +255,35 @@ export class ParticleSystem {
       ctx.fillStyle = p.color;
       ctx.globalAlpha = p.alpha;
 
-      // Authentic pixel particle drawing (sharp rectangular pixel blocks)
+      // Authentic pixel particle drawing
       if (p.type === 'sakura') {
         ctx.fillRect(screenX, screenY, Math.floor(p.size), Math.floor(p.size * 0.7));
       } else if (p.type === 'firefly') {
+        const pulse = 0.45 + 0.55 * Math.abs(Math.sin((p.oscillation || 0) * 1.8));
+        ctx.globalAlpha = p.alpha * pulse;
+        ctx.fillStyle = 'rgba(254, 240, 138, 0.25)';
+        ctx.fillRect(screenX - 2, screenY - 2, 6, 6);
+        ctx.fillStyle = p.color;
         ctx.fillRect(screenX, screenY, 2, 2);
+      } else if (p.type === 'rain') {
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(screenX, screenY);
+        ctx.lineTo(screenX + p.vx * 0.85, screenY + p.size);
+        ctx.stroke();
+      } else if (p.type === 'splash') {
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(screenX, screenY, p.size, p.size * 0.4, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (p.type === 'mist') {
+        const fade = Math.sin((p.life / p.maxLife) * Math.PI);
+        ctx.globalAlpha = p.alpha * fade;
+        ctx.beginPath();
+        ctx.ellipse(screenX, screenY, p.size, p.size * 0.35, 0, 0, Math.PI * 2);
+        ctx.fill();
       } else if (p.type === 'spark') {
         ctx.fillRect(screenX, screenY, 2, 2);
       } else {

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { BuildingData, TimeOfDay, NPC } from '../types';
+import { BuildingData, TimeOfDay, WeatherType, NPC } from '../types';
 import { WorldRenderer } from './WorldRenderer';
 import { PlayerCharacter } from './PlayerCharacter';
 import { ParticleSystem } from './particles';
@@ -12,6 +12,7 @@ interface GameCanvasProps {
   buildings: BuildingData[];
   npcs: NPC[];
   timeOfDay: TimeOfDay;
+  weather: WeatherType;
   onEnterBuilding: (buildingId: string) => void;
   onNearBuildingChange: (building: BuildingData | null) => void;
   onNearNPCChange: (npc: NPC | null) => void;
@@ -25,6 +26,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   buildings,
   npcs,
   timeOfDay,
+  weather,
   onEnterBuilding,
   onNearBuildingChange,
   onNearNPCChange,
@@ -269,8 +271,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         onNearNPCChange(closestNPC);
       }
 
-      // 6. Update Particle System
-      particles.update(renderer.worldWidth, renderer.worldHeight, timeOfDay);
+      // 6. Update Particle System (time-of-day + dynamic weather)
+      particles.update(renderer.worldWidth, renderer.worldHeight, timeOfDay, weather);
 
       // 7. Render Low-Res Frame to Offscreen Pixel-Art Canvas (640x360)
       offCtx.imageSmoothingEnabled = false;
@@ -282,8 +284,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // Foreground Particles
       particles.render(offCtx, camX, camY);
 
-      // Day / Night Lighting Shader with single cached lightmap & additive light pools
-      renderer.renderLightingShader(offCtx, camX, camY, timeOfDay, player);
+      // Day / Night & Weather Lighting Shader with single cached lightmap & additive light pools
+      renderer.renderLightingShader(offCtx, camX, camY, timeOfDay, player, weather);
 
       // F3 Debug Overlay & Hitbox Visualizer
       fpsRef.current = fpsRef.current * 0.92 + (1 / Math.max(0.001, dt)) * 0.08;
@@ -384,7 +386,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
-  }, [timeOfDay, buildings, onEnterBuilding, onNearBuildingChange, onNearNPCChange, activeBuildingModal]);
+  }, [timeOfDay, weather, buildings, onEnterBuilding, onNearBuildingChange, onNearNPCChange, activeBuildingModal]);
 
   return (
     <div className="relative w-full h-full overflow-hidden select-none cursor-crosshair">

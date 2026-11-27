@@ -233,9 +233,12 @@ export class MangoPet {
       const col = this.frameIndex % 4;
       const sx = col * frameW;
       const sy = row * frameH;
+      const trotHop = (this.state === 'walk' || this.state === 'follow')
+        ? -Math.abs(Math.sin(performance.now() * 0.014)) * 2.5
+        : 0;
 
       ctx.save();
-      ctx.translate(screenX, screenY);
+      ctx.translate(screenX, Math.round(screenY + trotHop));
       // Flip horizontally if facing right (spritesheet defaults to left-facing)
       if (this.direction === 'right') {
         ctx.scale(-1, 1);
@@ -256,6 +259,22 @@ export class MangoPet {
     } else {
       // Fallback procedural cat drawing while asset loads
       pixelAssets.drawCatSprite(ctx, screenX, screenY, performance.now() / 1000);
+    }
+
+    // Sleeping Zzz particles
+    if (this.state === 'sleep') {
+      const zTime = performance.now() * 0.002;
+      ctx.save();
+      ctx.font = '700 7px "Press Start 2P", monospace';
+      for (let i = 0; i < 2; i++) {
+        const zProg = (zTime + i * 0.5) % 1.0;
+        const zx = screenX + 10 + Math.sin(zProg * Math.PI * 2) * 3;
+        const zy = screenY - 24 - zProg * 16;
+        ctx.globalAlpha = Math.sin(zProg * Math.PI) * 0.85;
+        ctx.fillStyle = '#bae6fd';
+        ctx.fillText(i === 0 ? 'z' : 'Z', zx, zy);
+      }
+      ctx.restore();
     }
 
     // Overhead Retro Name Label Tag ("Mango 🐾")

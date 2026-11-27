@@ -25,9 +25,10 @@ import {
   Briefcase,
   Home
 } from 'lucide-react';
-import { TimeOfDay, Quest, BuildingData, NPC, ActiveBuff, PlayerStats } from '../../types';
+import { TimeOfDay, WeatherType, Quest, BuildingData, NPC, ActiveBuff, PlayerStats } from '../../types';
 import { soundManager } from '../../audio/SoundManager';
 import { ARYAN_STATS, INITIAL_BUFFS } from '../../data/portfolioData';
+import { TUNING } from '../../game/TUNING';
 
 interface GameHUDProps {
   playerLevel: number;
@@ -35,6 +36,10 @@ interface GameHUDProps {
   maxXp: number;
   timeOfDay: TimeOfDay;
   onTimeOfDayChange: (time: TimeOfDay) => void;
+  weather: WeatherType;
+  onWeatherChange: (weather: WeatherType) => void;
+  autoCycleEnabled: boolean;
+  onToggleAutoCycle: () => void;
   quests: Quest[];
   nearBuilding: BuildingData | null;
   nearNPC: NPC | null;
@@ -55,6 +60,10 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   maxXp = 2000,
   timeOfDay,
   onTimeOfDayChange,
+  weather,
+  onWeatherChange,
+  autoCycleEnabled,
+  onToggleAutoCycle,
   quests,
   nearBuilding,
   nearNPC,
@@ -93,24 +102,75 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   // Active ongoing quest (e.g. Analyze Sales Dashboard)
   const ongoingQuest = quests.find(q => q.id === 'quest_sales') || quests[0];
 
+  const cycleTime = () => {
+    soundManager.playClick();
+    const order = TUNING.CYCLE.TIME_ORDER;
+    const next = order[(order.indexOf(timeOfDay) + 1) % order.length];
+    onTimeOfDayChange(next);
+  };
+
+  const cycleWeather = () => {
+    soundManager.playClick();
+    const order = TUNING.CYCLE.WEATHER_ORDER;
+    const next = order[(order.indexOf(weather) + 1) % order.length];
+    onWeatherChange(next);
+  };
+
+  const timeIcon = timeOfDay === 'morning' ? '🌅' : timeOfDay === 'day' ? '☀️' : timeOfDay === 'afternoon' ? '🌤️' : timeOfDay === 'sunset' ? '🌇' : '🌙';
+  const weatherIcon = weather === 'clear' ? '✨' : weather === 'sakura_breeze' ? '🌸' : weather === 'mist' ? '🌫️' : weather === 'rain' ? '🌧️' : '⛈️';
+  const weatherLabel = weather === 'sakura_breeze' ? 'Breeze' : weather.charAt(0).toUpperCase() + weather.slice(1);
+
   return (
     <div className="absolute inset-0 pointer-events-none select-none overflow-hidden z-20 font-pixel">
       {/* ============================================================== */}
       {/* 1. TOP NAVIGATION BAR (Exact Match to Reference Screenshot)    */}
       {/* ============================================================== */}
       <nav className="absolute top-0 inset-x-0 h-12 bg-[#090e17]/90 backdrop-blur-sm border-b border-[#1e2a3a] px-4 sm:px-6 flex items-center justify-between pointer-events-auto shadow-md">
-        {/* Brand Title with Star */}
-        <div
-          onClick={() => {
-            soundManager.playClick();
-            onFastTravelToTownSquare();
-          }}
-          className="flex items-center gap-2 cursor-pointer group"
-        >
-          <span className="text-[#f59e0b] text-xs">✨</span>
-          <span className="text-xs sm:text-sm font-bold tracking-wider text-slate-100 group-hover:text-[#fde047] transition-colors">
-            ARYAN'S ADVENTURE
-          </span>
+        <div className="flex items-center gap-3">
+          {/* Brand Title with Star */}
+          <div
+            onClick={() => {
+              soundManager.playClick();
+              onFastTravelToTownSquare();
+            }}
+            className="flex items-center gap-2 cursor-pointer group"
+          >
+            <span className="text-[#f59e0b] text-xs">✨</span>
+            <span className="text-xs sm:text-sm font-bold tracking-wider text-slate-100 group-hover:text-[#fde047] transition-colors">
+              ARYAN'S ADVENTURE
+            </span>
+          </div>
+
+          {/* Live Time & Weather Cycle Pills */}
+          <div className="hidden md:flex items-center gap-1.5 ml-2 text-[7px]">
+            <button
+              onClick={cycleTime}
+              className="px-2 py-1 bg-[#111c2d] hover:bg-[#1b2b44] border border-amber-500/40 rounded text-amber-200 flex items-center gap-1 transition-colors"
+              title="Click to cycle Time of Day"
+            >
+              <span>{timeIcon}</span>
+              <span className="uppercase">{timeOfDay}</span>
+            </button>
+            <button
+              onClick={cycleWeather}
+              className="px-2 py-1 bg-[#111c2d] hover:bg-[#1b2b44] border border-sky-500/40 rounded text-sky-200 flex items-center gap-1 transition-colors"
+              title="Click to cycle Weather"
+            >
+              <span>{weatherIcon}</span>
+              <span className="uppercase">{weatherLabel}</span>
+            </button>
+            <button
+              onClick={() => { soundManager.playClick(); onToggleAutoCycle(); }}
+              className={`px-1.5 py-1 border rounded transition-colors ${
+                autoCycleEnabled
+                  ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+                  : 'bg-slate-900 border-slate-700 text-slate-400'
+              }`}
+              title={autoCycleEnabled ? 'Auto Day/Night & Weather Cycle: ON' : 'Auto Day/Night & Weather Cycle: PAUSED'}
+            >
+              {autoCycleEnabled ? 'AUTO' : 'FIXED'}
+            </button>
+          </div>
         </div>
 
         {/* Navigation Links */}

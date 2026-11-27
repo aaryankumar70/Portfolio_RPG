@@ -1,4 +1,4 @@
-import { BuildingData, TimeOfDay, NPC, DepthObject } from '../types';
+import { BuildingData, TimeOfDay, WeatherType, NPC, DepthObject } from '../types';
 import { pixelAssets } from './PixelArtAssets';
 import { PlayerCharacter } from './PlayerCharacter';
 import { NPCManager } from './NPCManager';
@@ -1938,13 +1938,14 @@ export class WorldRenderer {
     return { canvas: this.lightmapCanvas, ctx: this.lightmapCtx };
   }
 
-  // Atmospheric Lighting Shader: Single cached lightmap, additive light pools, time-of-day tints & vignette
+  // Atmospheric Lighting Shader: Single cached lightmap, additive light pools, time-of-day tints, weather & vignette
   public renderLightingShader(
     ctx: CanvasRenderingContext2D,
     cameraX: number,
     cameraY: number,
     timeOfDay: TimeOfDay,
-    player?: PlayerCharacter
+    player?: PlayerCharacter,
+    weather: WeatherType = 'clear'
   ) {
     const w = ctx.canvas.width;
     const h = ctx.canvas.height;
@@ -1957,25 +1958,41 @@ export class WorldRenderer {
     lmCtx.globalCompositeOperation = 'source-over';
     lmCtx.clearRect(0, 0, w, h);
 
-    // 2. Base atmospheric ambient tint
-    if (timeOfDay === 'day') {
-      // Warm golden sunlight tint
-      lmCtx.fillStyle = 'rgba(255, 235, 180, 0.08)';
+    // 2. Base atmospheric ambient tint for all 5 Day/Night phases
+    if (timeOfDay === 'morning') {
+      lmCtx.fillStyle = 'rgba(255, 195, 165, 0.14)';
+      lmCtx.fillRect(0, 0, w, h);
+    } else if (timeOfDay === 'day') {
+      lmCtx.fillStyle = 'rgba(255, 245, 210, 0.05)';
+      lmCtx.fillRect(0, 0, w, h);
+    } else if (timeOfDay === 'afternoon') {
+      lmCtx.fillStyle = 'rgba(255, 200, 120, 0.14)';
       lmCtx.fillRect(0, 0, w, h);
     } else if (timeOfDay === 'sunset') {
-      // Rich golden-hour amber/rose atmospheric tint
-      lmCtx.fillStyle = 'rgba(180, 75, 45, 0.32)';
+      lmCtx.fillStyle = 'rgba(185, 70, 48, 0.34)';
       lmCtx.fillRect(0, 0, w, h);
     } else {
-      // Deep nocturnal navy/slate
-      lmCtx.fillStyle = 'rgba(10, 16, 36, 0.78)';
+      lmCtx.fillStyle = 'rgba(8, 14, 34, 0.78)';
       lmCtx.fillRect(0, 0, w, h);
     }
 
-    // 3. For sunset and night: Additive light pools cutout
-    if (timeOfDay !== 'day') {
+    // 2b. Weather atmospheric tint overlay
+    if (weather === 'rain') {
+      lmCtx.fillStyle = 'rgba(30, 58, 95, 0.22)';
+      lmCtx.fillRect(0, 0, w, h);
+    } else if (weather === 'storm') {
+      lmCtx.fillStyle = 'rgba(15, 23, 42, 0.38)';
+      lmCtx.fillRect(0, 0, w, h);
+    } else if (weather === 'mist') {
+      lmCtx.fillStyle = 'rgba(203, 213, 225, 0.16)';
+      lmCtx.fillRect(0, 0, w, h);
+    }
+
+    // 3. Light pools cutout (night, sunset, rain, or storm)
+    const needsLights = timeOfDay === 'night' || timeOfDay === 'sunset' || weather === 'storm' || weather === 'rain';
+    if (needsLights) {
       const isNight = timeOfDay === 'night';
-      const glowAlpha = isNight ? 1.0 : 0.65;
+      const glowAlpha = isNight ? 1.0 : timeOfDay === 'sunset' ? 0.72 : 0.45;
 
       // Punch soft light holes through darkness using destination-out
       lmCtx.globalCompositeOperation = 'destination-out';
@@ -2033,11 +2050,15 @@ export class WorldRenderer {
       punchHole(1850, 1120, TUNING.ATMOSPHERE.LIGHT_RADII.MINES_LANTERN, glowAlpha);
 
       // Under-Portal Dome Cosmic Gateway
-      punchHole(1580, 955, 70, glowAlpha * 1.1);
+      punchHole(1580, 955, 75, glowAlpha * 1.15);
 
-      // Player small aura / lantern
+      // ML Lab & Analytics Tower Beacons
+      punchHole(2300, 620, 60, glowAlpha * 0.9);
+      punchHole(1840, 1450, 55, glowAlpha * 0.85);
+
+      // Player warm lantern aura
       if (player) {
-        punchHole(player.state.x, player.state.y, 42, 0.75);
+        punchHole(player.state.x, player.state.y, 48, 0.85);
       }
 
       // 4. Stamp warm colored additive light pools
@@ -2067,10 +2088,19 @@ export class WorldRenderer {
       crystals.forEach(cr => addColorPool(cr.x, cr.y - 10, TUNING.ATMOSPHERE.LIGHT_RADII.CRYSTAL, 'rgba(56, 189, 248, 0.45)'));
 
       // Under-Portal Dome celestial starlight
-      addColorPool(1580, 955, 80, 'rgba(129, 140, 248, 0.50)');
+      addColorPool(1580, 955, 85, 'rgba(129, 140, 248, 0.55)');
+
+      // ML Lab neon magenta & Analytics Tower cyan
+      addColorPool(2300, 620, 65, 'rgba(236, 72, 153, 0.35)');
+      addColorPool(1840, 1450, 60, 'rgba(6, 182, 212, 0.32)');
 
       // Windows warm interior lighting
       windows.forEach(win => addColorPool(win.x, win.y, TUNING.ATMOSPHERE.LIGHT_RADII.WINDOW, 'rgba(251, 191, 36, 0.30)'));
+
+      // Player warm lantern rim
+      if (player) {
+        addColorPool(player.state.x, player.state.y, 44, 'rgba(253, 224, 71, 0.16)');
+      }
     }
 
     // 5. Blend the lightmap onto the game canvas in a single draw call
@@ -2078,13 +2108,39 @@ export class WorldRenderer {
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(lmCanvas, 0, 0);
 
+    // 5b. Diagonal Sunbeams / Godrays (morning, afternoon, sunset when not storming/raining)
+    if ((timeOfDay === 'morning' || timeOfDay === 'afternoon' || timeOfDay === 'sunset') && weather !== 'rain' && weather !== 'storm') {
+      const beamAlpha = timeOfDay === 'sunset' ? 0.08 : 0.06;
+      const beamColor = timeOfDay === 'sunset' ? `rgba(251, 146, 60, ${beamAlpha})` : `rgba(254, 240, 138, ${beamAlpha})`;
+      ctx.fillStyle = beamColor;
+      for (let i = 0; i < 3; i++) {
+        const bx = (w * 0.2) + i * (w * 0.32) + Math.sin(this.animTimer * 0.4 + i) * 18;
+        ctx.beginPath();
+        ctx.moveTo(bx, 0);
+        ctx.lineTo(bx + 45, 0);
+        ctx.lineTo(bx - 65, h);
+        ctx.lineTo(bx - 110, h);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    // 5c. Storm Lightning Flash
+    if (weather === 'storm') {
+      const bolt = Math.sin(this.animTimer * 13.7) * Math.cos(this.animTimer * 29.3);
+      if (bolt > 0.94) {
+        ctx.fillStyle = 'rgba(224, 242, 254, 0.32)';
+        ctx.fillRect(0, 0, w, h);
+      }
+    }
+
     // 6. Subtle edge vignette and color grade
     const cxCenter = w / 2;
     const cyCenter = h / 2;
     const maxRadius = Math.hypot(cxCenter, cyCenter);
     const vignette = ctx.createRadialGradient(cxCenter, cyCenter, maxRadius * 0.55, cxCenter, cyCenter, maxRadius);
     vignette.addColorStop(0, 'transparent');
-    vignette.addColorStop(1, `rgba(10, 15, 30, ${timeOfDay === 'night' ? 0.6 : TUNING.ATMOSPHERE.VIGNETTE_INTENSITY})`);
+    vignette.addColorStop(1, `rgba(10, 15, 30, ${timeOfDay === 'night' ? 0.6 : weather === 'storm' ? 0.42 : TUNING.ATMOSPHERE.VIGNETTE_INTENSITY})`);
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, w, h);
 

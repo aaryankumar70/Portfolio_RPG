@@ -68,13 +68,23 @@ export const TUNING = {
       HEARTH: 60,
     },
     TINTS: {
-      day: { r: 1.0, g: 1.0, b: 1.0, a: 0.0 },
-      sunset: { r: 1.0, g: 0.78, b: 0.58, a: 0.22 },
-      night: { r: 0.16, g: 0.22, b: 0.44, a: 0.55 },
+      morning: { r: 1.0, g: 0.85, b: 0.78, a: 0.14 },
+      day: { r: 1.0, g: 1.0, b: 0.96, a: 0.04 },
+      afternoon: { r: 1.0, g: 0.88, b: 0.68, a: 0.14 },
+      sunset: { r: 0.85, g: 0.36, b: 0.24, a: 0.34 },
+      night: { r: 0.05, g: 0.08, b: 0.20, a: 0.78 },
     },
   },
 
-  // 6. Interiors
+  // 6. Day/Night & Weather Cycles
+  CYCLE: {
+    DAY_PHASE_DURATION_MS: 45000,     // 45s per time-of-day phase
+    WEATHER_PHASE_DURATION_MS: 40000, // 40s per weather phase
+    TIME_ORDER: ['morning', 'day', 'afternoon', 'sunset', 'night'] as const,
+    WEATHER_ORDER: ['clear', 'sakura_breeze', 'mist', 'rain', 'storm'] as const,
+  },
+
+  // 7. Interiors
   INTERIOR: {
     CAMERA_DAMPING: 10.0,
     PROMPT_PULSE_SPEED: 3.8,

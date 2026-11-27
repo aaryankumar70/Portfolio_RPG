@@ -27,6 +27,7 @@ export class PlayerCharacter {
   private footstepTimer = 0;
   public isRunning = false;
   private ghostTrail: Array<{ x: number; y: number; dir: 'down' | 'up' | 'left' | 'right'; frame: number; alpha: number }> = [];
+  private dustPuffs: Array<{ x: number; y: number; vx: number; vy: number; size: number; alpha: number }> = [];
 
   // Delta-time based update loop with acceleration and friction curves
   public update(
@@ -175,6 +176,19 @@ export class PlayerCharacter {
       if (this.footstepTimer >= stepCadence) {
         this.footstepTimer = 0;
         soundManager.playFootstep();
+
+        // Spawn crisp footstep dust puff
+        const count = this.isRunning ? 3 : 1;
+        for (let i = 0; i < count; i++) {
+          this.dustPuffs.push({
+            x: this.state.x + (Math.random() - 0.5) * 8,
+            y: this.state.y + TUNING.PLAYER.HITBOX.OFFSET_Y + 2,
+            vx: -this.vx * 0.08 + (Math.random() - 0.5) * 18,
+            vy: -Math.random() * 14 - 4,
+            size: this.isRunning ? 4 : 3,
+            alpha: 0.55
+          });
+        }
       }
     } else {
       this.state.animState = 'idle';
@@ -189,6 +203,18 @@ export class PlayerCharacter {
         this.ghostTrail.splice(i, 1);
       }
     }
+
+    // Update footstep dust puffs
+    for (let i = this.dustPuffs.length - 1; i >= 0; i--) {
+      const d = this.dustPuffs[i];
+      d.x += d.vx * dt;
+      d.y += d.vy * dt;
+      d.size += dt * 3.5;
+      d.alpha -= dt * 1.8;
+      if (d.alpha <= 0) {
+        this.dustPuffs.splice(i, 1);
+      }
+    }
   }
 
   // Set click-to-move path via A* pathfinder
@@ -199,6 +225,17 @@ export class PlayerCharacter {
   }
 
   public render(ctx: CanvasRenderingContext2D, cameraX: number, cameraY: number) {
+    // 0. Render footstep dust puffs beneath character
+    this.dustPuffs.forEach((d) => {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, d.alpha);
+      ctx.fillStyle = '#e2e8f0';
+      const dx = Math.round(d.x - cameraX);
+      const dy = Math.round(d.y - cameraY);
+      ctx.fillRect(dx - Math.floor(d.size / 2), dy - Math.floor(d.size / 2), Math.floor(d.size), Math.floor(d.size));
+      ctx.restore();
+    });
+
     // 1. Render chromatic ghost trails behind player
     this.ghostTrail.forEach((ghost) => {
       ctx.save();
@@ -209,35 +246,47 @@ export class PlayerCharacter {
       ctx.restore();
     });
 
-    // 2. Render Main Player Sprite (Pixel Snapped with Ground Contact Shadow)
+    // 2. Render Main Player Sprite (Pixel Snapped with Ground Contact Shadow & subtle bob)
     const px = Math.round(this.state.x - cameraX);
     const py = Math.round(this.state.y - cameraY);
+    const breathOffset = this.state.isMoving ? 0 : Math.round(Math.sin(this.idleAnimTimer * 0.7) * 0.8);
 
-    // Consistent ground drop shadow
+    // Consistent ground drop shadow (slightly tighter when stepping)
+    const shadowScale = this.state.isMoving ? 0.92 : 1.0;
     ctx.save();
     ctx.fillStyle = TUNING.ATMOSPHERE.SHADOW_COLOR;
     ctx.beginPath();
     ctx.ellipse(
       px + TUNING.ATMOSPHERE.SHADOW_OFFSET_X,
       py + TUNING.PLAYER.HITBOX.OFFSET_Y + TUNING.ATMOSPHERE.SHADOW_OFFSET_Y,
-      TUNING.PLAYER.HITBOX.RADIUS_X + 2,
-      TUNING.PLAYER.HITBOX.RADIUS_Y,
+      (TUNING.PLAYER.HITBOX.RADIUS_X + 2) * shadowScale,
+      TUNING.PLAYER.HITBOX.RADIUS_Y * shadowScale,
       0, 0, Math.PI * 2
     );
     ctx.fill();
     ctx.restore();
 
     const frame = Math.floor(this.state.isMoving ? this.walkAnimTimer : this.idleAnimTimer);
-    pixelAssets.drawPlayerSprite(ctx, px, py, this.state.direction, frame, this.state.isMoving);
+    pixelAssets.drawPlayerSprite(ctx, px, py + breathOffset, this.state.direction, frame, this.state.isMoving);
 
-    // 3. Optional: Draw subtle path dot markers for click-to-move
+    // 3. Draw subtle path dot markers & pulsing destination ring for click-to-move
     if (this.state.path && this.state.path.length > 0) {
       ctx.save();
-      ctx.fillStyle = 'rgba(34, 211, 238, 0.55)';
-      for (const pt of this.state.path) {
+      ctx.fillStyle = 'rgba(34, 211, 238, 0.5)';
+      for (let i = 0; i < this.state.path.length; i++) {
+        const pt = this.state.path[i];
         const sx = Math.floor(pt.x - cameraX);
         const sy = Math.floor(pt.y - cameraY);
-        ctx.fillRect(sx - 1, sy - 1, 3, 3);
+        if (i === this.state.path.length - 1) {
+          const pulse = 4 + Math.sin(performance.now() * 0.008) * 2;
+          ctx.strokeStyle = 'rgba(34, 211, 238, 0.9)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(sx, sy, pulse, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          ctx.fillRect(sx - 1, sy - 1, 2, 2);
+        }
       }
       ctx.restore();
     }

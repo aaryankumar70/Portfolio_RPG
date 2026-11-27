@@ -1,4 +1,6 @@
-export type TimeOfDay = 'morning' | 'afternoon' | 'sunset' | 'night' | 'day';
+export type TimeOfDay = 'morning' | 'day' | 'afternoon' | 'sunset' | 'night';
+
+export type WeatherType = 'clear' | 'sakura_breeze' | 'mist' | 'rain' | 'storm';
 
 export type BuildingId =
   | 'coffee_shop'

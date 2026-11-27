@@ -91,9 +91,14 @@ export class NPCManager {
     const spritePath = NPCManager.NPC_SPRITE_MAP[npc.id];
     const img = spritePath ? assetManager.getImage(spritePath) : null;
 
+    const isWalking = npc.state === 'walking';
+    const bobOffset = isWalking
+      ? -Math.round(Math.abs(Math.sin(animTime * 8 + npc.x)) * 2)
+      : Math.round(Math.sin(animTime * 2.2 + npc.x) * 0.8);
+
     if (img) {
         // 4-frame idle animation (128x48 total, each frame 32x48)
-        const frame = Math.floor(animTime * 4.5) % 4;
+        const frame = Math.floor(animTime * (isWalking ? 6.5 : 4.5)) % 4;
         const frameW = 32;
         const frameH = 48;
         const scale = 1.6;
@@ -103,11 +108,17 @@ export class NPCManager {
         ctx.save();
         ctx.imageSmoothingEnabled = false;
 
-        // Shadow beneath NPC
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+        // Ground contact shadow beneath NPC
+        ctx.fillStyle = 'rgba(11, 16, 28, 0.36)';
         ctx.beginPath();
-        ctx.ellipse(nx, ny - 2, destW * 0.32, 6, 0, 0, Math.PI * 2);
+        ctx.ellipse(nx + 1.5, ny + 1, destW * 0.32, 6, 0, 0, Math.PI * 2);
         ctx.fill();
+
+        // Horizontal flip when facing left
+        ctx.translate(nx, ny + bobOffset);
+        if (npc.direction === 'left') {
+          ctx.scale(-1, 1);
+        }
 
         ctx.drawImage(
           img,
@@ -115,8 +126,8 @@ export class NPCManager {
           0,
           frameW,
           frameH,
-          Math.floor(nx - destW / 2),
-          Math.floor(ny - destH + 4),
+          Math.floor(-destW / 2),
+          Math.floor(-destH + 4),
           Math.floor(destW),
           Math.floor(destH)
         );
@@ -124,9 +135,9 @@ export class NPCManager {
       } else {
         // Fallback procedural NPC sprite
         if (npc.id === 'npc_blacksmith' || npc.id === 'npc_smith') {
-          pixelAssets.drawBlacksmithSprite(ctx, nx, ny, animTime);
+          pixelAssets.drawBlacksmithSprite(ctx, nx, ny + bobOffset, animTime);
         } else {
-          pixelAssets.drawLibrarianSprite(ctx, nx, ny, animTime);
+          pixelAssets.drawLibrarianSprite(ctx, nx, ny + bobOffset, animTime);
         }
       }
 
@@ -134,16 +145,17 @@ export class NPCManager {
     ctx.save();
     ctx.font = '700 8px "Press Start 2P", monospace';
     const tagW = ctx.measureText(npc.name).width;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-    ctx.fillRect(Math.floor(nx - tagW / 2 - 4), ny - 68, tagW + 8, 14);
+    const tagY = ny - 68 + Math.round(Math.sin(animTime * 2.5 + npc.x) * 1.2);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+    ctx.fillRect(Math.floor(nx - tagW / 2 - 5), tagY, tagW + 10, 14);
     ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 1;
-    ctx.strokeRect(Math.floor(nx - tagW / 2 - 4), ny - 68, tagW + 8, 14);
+    ctx.strokeRect(Math.floor(nx - tagW / 2 - 5), tagY, tagW + 10, 14);
 
     ctx.fillStyle = '#fde047';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(npc.name, nx, ny - 61);
+    ctx.fillText(npc.name, nx, tagY + 7);
     ctx.restore();
   }
 }

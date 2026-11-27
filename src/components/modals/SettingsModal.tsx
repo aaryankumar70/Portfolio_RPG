@@ -1,12 +1,16 @@
 import React from 'react';
-import { Settings, Volume2, VolumeX, Keyboard } from 'lucide-react';
-import { TimeOfDay } from '../../types';
+import { Settings, Volume2, VolumeX, Keyboard, Sun, CloudRain, RefreshCw } from 'lucide-react';
+import { TimeOfDay, WeatherType } from '../../types';
 import { soundManager } from '../../audio/SoundManager';
 
 interface SettingsModalProps {
   onClose: () => void;
   timeOfDay: TimeOfDay;
   onTimeOfDayChange: (time: TimeOfDay) => void;
+  weather: WeatherType;
+  onWeatherChange: (weather: WeatherType) => void;
+  autoCycleEnabled: boolean;
+  onToggleAutoCycle: () => void;
   isSoundMuted: boolean;
   onToggleSound: () => void;
 }
@@ -15,6 +19,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   timeOfDay,
   onTimeOfDayChange,
+  weather,
+  onWeatherChange,
+  autoCycleEnabled,
+  onToggleAutoCycle,
   isSoundMuted,
   onToggleSound
 }) => {
@@ -55,11 +63,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
 
+          {/* Auto-Cycle Toggle */}
+          <div className="p-3 bg-[#1b0f30] border border-[#3b1254] flex justify-between items-center">
+            <div className="flex items-center gap-2.5">
+              <RefreshCw className={`w-4 h-4 ${autoCycleEnabled ? 'text-emerald-400 animate-spin' : 'text-slate-400'}`} style={{ animationDuration: '6s' }} />
+              <div>
+                <h4 className="font-pixel text-[8px] text-white">DYNAMIC WORLD CYCLES</h4>
+                <p className="text-[10px] text-[#c084fc]">Auto-advance time & weather</p>
+              </div>
+            </div>
+            <button
+              onClick={() => { soundManager.playClick(); onToggleAutoCycle(); }}
+              className={`pixel-btn px-3 py-1 font-pixel text-[7px] ${autoCycleEnabled ? 'text-emerald-400' : 'text-slate-400'}`}
+            >
+              {autoCycleEnabled ? 'AUTO' : 'MANUAL'}
+            </button>
+          </div>
+
           {/* Time */}
           <div className="p-3 bg-[#1b0f30] border border-[#3b1254]">
-            <h4 className="font-pixel text-[8px] text-white mb-2">LIGHTING ATMOSPHERE</h4>
-            <div className="grid grid-cols-4 gap-1.5 font-pixel text-[7px]">
-              {(['morning', 'afternoon', 'sunset', 'night'] as const).map((t) => (
+            <h4 className="font-pixel text-[8px] text-white mb-2 flex items-center gap-1.5">
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+              <span>TIME OF DAY</span>
+            </h4>
+            <div className="grid grid-cols-5 gap-1 font-pixel text-[6px]">
+              {(['morning', 'day', 'afternoon', 'sunset', 'night'] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => { soundManager.playClick(); onTimeOfDayChange(t); }}
@@ -68,6 +96,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   }`}
                 >
                   {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Weather */}
+          <div className="p-3 bg-[#1b0f30] border border-[#3b1254]">
+            <h4 className="font-pixel text-[8px] text-white mb-2 flex items-center gap-1.5">
+              <CloudRain className="w-3.5 h-3.5 text-sky-400" />
+              <span>WEATHER ATMOSPHERE</span>
+            </h4>
+            <div className="grid grid-cols-5 gap-1 font-pixel text-[6px]">
+              {([
+                { id: 'clear', label: 'CLEAR' },
+                { id: 'sakura_breeze', label: 'BREEZE' },
+                { id: 'mist', label: 'MIST' },
+                { id: 'rain', label: 'RAIN' },
+                { id: 'storm', label: 'STORM' }
+              ] as const).map((w) => (
+                <button
+                  key={w.id}
+                  onClick={() => { soundManager.playClick(); onWeatherChange(w.id); }}
+                  className={`py-1.5 uppercase transition-all cursor-pointer ${
+                    weather === w.id ? 'bg-[#0284c7] text-white border border-[#fde047] font-bold shadow-[0_0_8px_rgba(56,189,248,0.4)]' : 'bg-[#120a22] text-sky-300 border border-[#3b1254]'
+                  }`}
+                >
+                  {w.label}
                 </button>
               ))}
             </div>
