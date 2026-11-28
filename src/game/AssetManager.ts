@@ -23,7 +23,7 @@ export class AssetManager {
     '/assets/characters/mango/mango_follow.png',
     '/assets/characters/mango/mango_sit.png',
 
-    // Buildings (12 Locations)
+    // Buildings (13 Locations)
     '/assets/buildings/coffee_shop.png',
     '/assets/buildings/guild_hall.png',
     '/assets/buildings/python_cave.png',
@@ -36,6 +36,7 @@ export class AssetManager {
     '/assets/buildings/ml_laboratory.png',
     '/assets/buildings/boss_arena.png',
     '/assets/buildings/post_office.png',
+    '/assets/buildings/portal_dome.png',
 
     // Environment
     '/assets/environment/fountain.png',

@@ -34,7 +34,24 @@ export class WorldRenderer {
     analytics_tower: '/assets/buildings/analytics_tower.png',
     ml_lab: '/assets/buildings/ml_laboratory.png',
     boss_arena: '/assets/buildings/boss_arena.png',
-    post_office: '/assets/buildings/post_office.png'
+    post_office: '/assets/buildings/post_office.png',
+    portal_dome: '/assets/buildings/portal_dome.png'
+  };
+
+  private static readonly BUILDING_RENDER_WIDTHS: Record<string, number> = {
+    coffee_shop: 256,
+    guild_hall: 304,
+    python_cave: 264,
+    garden: 252,
+    sql_mines: 264,
+    blacksmith: 252,
+    library: 272,
+    home: 236,
+    analytics_tower: 228,
+    ml_lab: 256,
+    boss_arena: 264,
+    post_office: 190,
+    portal_dome: 228
   };
 
   public render(
@@ -145,9 +162,9 @@ export class WorldRenderer {
     ctx.moveTo(cx, cy);
     ctx.lineTo(1200 - cameraX, 710 - cameraY);
 
-    // 2. Central South Avenue to Your Home (1200, 1530) & Post Office (1200, 1860)
+    // 2. Central South Avenue to Your Home (1200, 1530) & Post Office (1200, 1900)
     ctx.moveTo(cx, cy);
-    ctx.lineTo(1200 - cameraX, 1860 - cameraY);
+    ctx.lineTo(1200 - cameraX, 1900 - cameraY);
 
     // 3. West Path to Garden (740, 1100)
     ctx.moveTo(cx, cy);
@@ -251,7 +268,7 @@ export class WorldRenderer {
       { x: 1840, y: 1560 }, // Analytics Tower
       { x: 2300, y: 720 },  // ML Lab
       { x: 2300, y: 1530 }, // Boss Arena
-      { x: 1200, y: 1860 }, // Post Office
+      { x: 1200, y: 1900 }, // Post Office
       { x: 1580, y: 1040 }  // Portal Dome Threshold
     ];
 
@@ -262,23 +279,34 @@ export class WorldRenderer {
     ctx.restore();
   }
 
-  // Draw natural rounded flagstones leading up to building doors
+  // Draw flagstone threshold apron and natural stepping stones leading to building doors
   private drawDoorSteppingStones(ctx: CanvasRenderingContext2D, sx: number, sy: number) {
     ctx.save();
+    const rx = Math.round(sx);
+    const ry = Math.round(sy);
+
+    // Beveled doorway threshold stone mat
+    ctx.fillStyle = '#9b836b';
+    ctx.fillRect(rx - 18, ry - 8, 36, 12);
+    ctx.fillStyle = '#cbb396';
+    ctx.fillRect(rx - 16, ry - 7, 32, 9);
+    ctx.fillStyle = '#6f5642';
+    ctx.fillRect(rx - 18, ry + 3, 36, 2);
+
+    // Natural rounded stepping flagstones leading outward
     ctx.fillStyle = '#d4a373';
-    ctx.strokeStyle = '#8b5e3c';
+    ctx.strokeStyle = '#7c5335';
     ctx.lineWidth = 1;
 
-    // 3 subtle rounded stepping stones
     const stones = [
-      { dx: -12, dy: -4, w: 10, h: 6 },
-      { dx: 2, dy: -6, w: 12, h: 7 },
-      { dx: -4, dy: 6, w: 11, h: 6 }
+      { dx: -11, dy: 9, w: 12, h: 7 },
+      { dx: 5, dy: 8, w: 13, h: 7 },
+      { dx: -2, dy: 17, w: 14, h: 7 }
     ];
 
     stones.forEach((s) => {
       ctx.beginPath();
-      ctx.ellipse(sx + s.dx, sy + s.dy, s.w / 2, s.h / 2, 0, 0, Math.PI * 2);
+      ctx.ellipse(rx + s.dx, ry + s.dy, s.w / 2, s.h / 2, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     });
@@ -580,25 +608,31 @@ export class WorldRenderer {
           let roofTopY = by;
 
           if (img) {
-            const destW = Math.max(b.width, 240);
+            const destW = WorldRenderer.BUILDING_RENDER_WIDTHS[b.id] ?? Math.max(b.width, 240);
             const destH = Math.round(destW * (img.naturalHeight / img.naturalWidth));
             const destX = Math.round(bx + (b.width - destW) / 2);
             const destY = Math.round(by + b.height - destH);
             roofTopY = destY;
 
-            // Ground contact shadow
+            // Grounded architectural base shadow + directional SE drop shadow
             c.fillStyle = TUNING.ATMOSPHERE.SHADOW_COLOR;
             c.beginPath();
             c.ellipse(
-              bx + Math.floor(b.width / 2) + TUNING.ATMOSPHERE.SHADOW_OFFSET_X,
+              destX + Math.floor(destW / 2) + TUNING.ATMOSPHERE.SHADOW_OFFSET_X,
               by + b.height - 4 + TUNING.ATMOSPHERE.SHADOW_OFFSET_Y,
-              Math.floor(destW * 0.46),
-              14,
+              Math.floor(destW * 0.44),
+              11,
               0,
               0,
               Math.PI * 2
             );
             c.fill();
+            c.fillRect(
+              destX + Math.floor(destW * 0.1),
+              by + b.height - 5,
+              Math.floor(destW * 0.8),
+              7
+            );
 
             c.imageSmoothingEnabled = false;
             c.drawImage(img, destX, destY, destW, destH);
@@ -645,7 +679,7 @@ export class WorldRenderer {
           }
 
           // Overhead floating plaque positioned cleanly above roof ridge
-          const plaqueY = roofTopY - 38;
+          const plaqueY = roofTopY - 26;
           this.drawBuildingPlaque(c, bx + Math.floor(b.width / 2), plaqueY, b.name, b.subtitle);
           c.restore();
         }
@@ -996,62 +1030,199 @@ export class WorldRenderer {
     };
 
     if (id === 'coffee_shop') {
-      // Chimney warm smoke
-      renderSmokeColumn(bx + 32, by + 12, false);
+      // Chimney warm smoke (top-right brick chimney)
+      renderSmokeColumn(bx + Math.round(bw * 0.77), by + 8, false);
 
-      // Steam puffs rising from coffee cup on roof
-      const cupX = bx + Math.floor(bw / 2);
-      const cupY = by + 22;
+      // Steam puffs rising from coffee cup on roof crest
+      const cupX = bx + Math.round(bw * 0.50);
+      const cupY = by + Math.round(bh * 0.14);
       const steamBob = Math.sin(this.animTimer * 4) * 3;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
-      ctx.fillRect(cupX - 5, cupY - 18 + steamBob, 3, 5);
-      ctx.fillRect(cupX + 4, cupY - 22 - steamBob, 3, 6);
-      ctx.fillRect(cupX - 1, cupY - 26 + steamBob * 0.5, 2, 4);
+      ctx.fillRect(cupX - 5, Math.round(cupY - 10 + steamBob), 3, 5);
+      ctx.fillRect(cupX + 4, Math.round(cupY - 14 - steamBob), 3, 6);
+      ctx.fillRect(cupX - 1, Math.round(cupY - 18 + steamBob * 0.5), 2, 4);
     } else if (id === 'blacksmith') {
-      // Roaring hearth flame animation in forge furnace
-      const forgeX = bx + Math.floor(bw / 2) - 16;
-      const forgeY = by + bh - 42;
+      // Soft radial forge ember glow + rising sparks (leaves crisp pixel anvil unobstructed)
+      const forgeX = bx + Math.round(bw * 0.50);
+      const forgeY = by + Math.round(bh * 0.68);
       const flicker = Math.sin(this.animTimer * 8) * 3;
-      ctx.fillStyle = '#f97316';
-      ctx.fillRect(forgeX + 4, forgeY + 8 + flicker, 16, 12 - flicker);
-      ctx.fillStyle = '#fde047';
-      ctx.fillRect(forgeX + 7, forgeY + 12 + flicker * 0.5, 10, 8);
+      const fGlow = ctx.createRadialGradient(forgeX, forgeY, 2, forgeX, forgeY, 26 + flicker);
+      fGlow.addColorStop(0, 'rgba(253, 224, 71, 0.38)');
+      fGlow.addColorStop(0.45, 'rgba(249, 115, 22, 0.25)');
+      fGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = fGlow;
+      ctx.beginPath();
+      ctx.arc(forgeX, forgeY, 26 + flicker, 0, Math.PI * 2);
+      ctx.fill();
 
-      // Chimney dark forge smoke column
-      renderSmokeColumn(bx + bw - 36, by + 10, true);
+      for (let i = 0; i < 3; i++) {
+        const st = (this.animTimer * 1.1 + i * 0.33) % 1.0;
+        const sx = forgeX + Math.round(Math.sin(st * Math.PI * 3 + i * 2) * 8);
+        const sy = Math.round(forgeY - st * 22);
+        ctx.fillStyle = i % 2 === 0 ? 'rgba(253, 224, 71, 0.85)' : 'rgba(249, 115, 22, 0.85)';
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+
+      // Chimney dark forge smoke column (top-right stack)
+      renderSmokeColumn(bx + Math.round(bw * 0.85), by + 14, true);
     } else if (id === 'python_cave') {
       // Pulsing cyan & blue crystal magic glow
       const pulse = Math.sin(this.animTimer * 3.5) * 4;
-      const cGlow = ctx.createRadialGradient(bx + 40, by + bh - 32, 2, bx + 40, by + bh - 32, 26 + pulse);
-      cGlow.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
-      cGlow.addColorStop(1, 'transparent');
-      ctx.fillStyle = cGlow;
-      ctx.beginPath();
-      ctx.arc(bx + 40, by + bh - 32, 26 + pulse, 0, Math.PI * 2);
-      ctx.fill();
+      const lx = bx + Math.round(bw * 0.20);
+      const rx = bx + Math.round(bw * 0.80);
+      const cy = by + Math.round(bh * 0.78);
 
-      const cGlow2 = ctx.createRadialGradient(bx + bw - 40, by + bh - 32, 2, bx + bw - 40, by + bh - 32, 26 + pulse);
-      cGlow2.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
-      cGlow2.addColorStop(1, 'transparent');
-      ctx.fillStyle = cGlow2;
-      ctx.beginPath();
-      ctx.arc(bx + bw - 40, by + bh - 32, 26 + pulse, 0, Math.PI * 2);
-      ctx.fill();
+      [lx, rx].forEach((cx) => {
+        const cGlow = ctx.createRadialGradient(cx, cy, 2, cx, cy, 24 + pulse);
+        cGlow.addColorStop(0, 'rgba(56, 189, 248, 0.34)');
+        cGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = cGlow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 24 + pulse, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    } else if (id === 'sql_mines') {
+      // Dual hanging timber lanterns warm amber flicker
+      const pulse = Math.sin(this.animTimer * 5) * 2;
+      const ly = by + Math.round(bh * 0.25);
+      [bx + Math.round(bw * 0.30), bx + Math.round(bw * 0.70)].forEach((lx) => {
+        const lGlow = ctx.createRadialGradient(lx, ly, 1, lx, ly, 18 + pulse);
+        lGlow.addColorStop(0, 'rgba(253, 224, 71, 0.42)');
+        lGlow.addColorStop(0.5, 'rgba(245, 158, 11, 0.2)');
+        lGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = lGlow;
+        ctx.beginPath();
+        ctx.arc(lx, ly, 18 + pulse, 0, Math.PI * 2);
+        ctx.fill();
+      });
     } else if (id === 'ml_lab') {
-      // Neural core pink/purple pulse in glass dome
-      const domeX = bx + Math.floor(bw / 2);
-      const domeY = by + 46;
+      // Neural core pink/purple pulse in glass dome + cyan doorway shimmer
+      const domeX = bx + Math.round(bw * 0.45);
+      const domeY = by + Math.round(bh * 0.36);
       const corePulse = Math.sin(this.animTimer * 5) * 3;
       const mGlow = ctx.createRadialGradient(domeX, domeY, 2, domeX, domeY, 22 + corePulse);
-      mGlow.addColorStop(0, 'rgba(236, 72, 153, 0.45)');
+      mGlow.addColorStop(0, 'rgba(236, 72, 153, 0.42)');
       mGlow.addColorStop(1, 'transparent');
       ctx.fillStyle = mGlow;
       ctx.beginPath();
       ctx.arc(domeX, domeY, 22 + corePulse, 0, Math.PI * 2);
       ctx.fill();
+
+      const doorX = bx + Math.round(bw * 0.50);
+      const doorY = by + Math.round(bh * 0.74);
+      const dGlow = ctx.createRadialGradient(doorX, doorY, 1, doorX, doorY, 16 - corePulse * 0.5);
+      dGlow.addColorStop(0, 'rgba(34, 211, 238, 0.28)');
+      dGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = dGlow;
+      ctx.beginPath();
+      ctx.arc(doorX, doorY, 16 - corePulse * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (id === 'analytics_tower') {
+      // Sapphire crystal beacon + cyan chart doorway glow
+      const pulse = Math.sin(this.animTimer * 4) * 3;
+      const topX = bx + Math.round(bw * 0.50);
+      const topY = by + Math.round(bh * 0.14);
+      const aGlow = ctx.createRadialGradient(topX, topY, 1, topX, topY, 18 + pulse);
+      aGlow.addColorStop(0, 'rgba(56, 189, 248, 0.38)');
+      aGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = aGlow;
+      ctx.beginPath();
+      ctx.arc(topX, topY, 18 + pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      const archY = by + Math.round(bh * 0.80);
+      const archGlow = ctx.createRadialGradient(topX, archY, 1, topX, archY, 18 - pulse * 0.4);
+      archGlow.addColorStop(0, 'rgba(34, 211, 238, 0.25)');
+      archGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = archGlow;
+      ctx.beginPath();
+      ctx.arc(topX, archY, 18 - pulse * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (id === 'boss_arena') {
+      // Twin flanking brazier flame flickers
+      const fY = by + Math.round(bh * 0.74);
+      [bx + Math.round(bw * 0.19), bx + Math.round(bw * 0.81)].forEach((fX, idx) => {
+        const flick = Math.sin(this.animTimer * 9 + idx * 1.7) * 2;
+        const bGlow = ctx.createRadialGradient(fX, fY, 1, fX, fY, 16 + flick);
+        bGlow.addColorStop(0, 'rgba(253, 224, 71, 0.45)');
+        bGlow.addColorStop(0.5, 'rgba(249, 115, 22, 0.24)');
+        bGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = bGlow;
+        ctx.beginPath();
+        ctx.arc(fX, fY, 16 + flick, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(fX - 1, Math.round(fY - 5 + flick * 0.5), 2, 3);
+      });
     } else if (id === 'home') {
-      // Cozy white smoke puffs billowing from home chimney
-      renderSmokeColumn(bx + bw - 34, by + 8, false);
+      // Cozy white smoke puffs billowing from top-right cottage chimney
+      renderSmokeColumn(bx + Math.round(bw * 0.78), by + 12, false);
+    } else if (id === 'portal_dome') {
+      // Live animated swirling cosmic vortex inside the obsidian arch cutout
+      const px = bx + Math.round(bw * 0.50);
+      const py = by + Math.round(bh * 0.68);
+      const rx = Math.max(12, Math.round(bw * 0.155));
+      const ry = Math.max(16, Math.round(bh * 0.175));
+      const pulse = Math.sin(this.animTimer * 3.5);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
+      ctx.clip();
+
+      // Deep astral void fill
+      const vGrad = ctx.createRadialGradient(px, py, 2, px, py, ry + 4);
+      vGrad.addColorStop(0, '#eef2ff');
+      vGrad.addColorStop(0.22, '#67e8f9');
+      vGrad.addColorStop(0.52, '#6366f1');
+      vGrad.addColorStop(0.85, '#312e81');
+      vGrad.addColorStop(1, '#09061a');
+      ctx.fillStyle = vGrad;
+      ctx.fillRect(px - rx - 2, py - ry - 2, rx * 2 + 4, ry * 2 + 4);
+
+      // Counter-rotating cosmic spiral arcs
+      for (let arm = 0; arm < 3; arm++) {
+        const ang = this.animTimer * 2.2 + (arm * Math.PI * 2) / 3;
+        ctx.strokeStyle = arm % 2 === 0 ? 'rgba(165, 243, 252, 0.75)' : 'rgba(196, 181, 253, 0.7)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(px, py, Math.max(5, rx * 0.72), Math.max(7, ry * 0.42), ang, 0, Math.PI * 1.25);
+        ctx.stroke();
+
+        const angRev = -this.animTimer * 1.6 + (arm * Math.PI * 2) / 3;
+        ctx.strokeStyle = 'rgba(129, 140, 248, 0.55)';
+        ctx.beginPath();
+        ctx.ellipse(px, py, Math.max(4, rx * 0.45), Math.max(6, ry * 0.68), angRev, Math.PI * 0.2, Math.PI * 1.1);
+        ctx.stroke();
+      }
+
+      // Shimmering star core flare
+      const coreSize = 4 + Math.round(pulse * 1.2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(px - Math.floor(coreSize / 2), py - Math.floor(coreSize / 2), coreSize, coreSize);
+
+      // Orbiting arcane stardust motes
+      for (let i = 0; i < 6; i++) {
+        const t = this.animTimer * 2.4 + i * 1.05;
+        const rFrac = 0.35 + 0.45 * ((Math.sin(t * 0.7 + i) + 1) * 0.5);
+        const mx = Math.round(px + Math.cos(t) * rx * rFrac);
+        const my = Math.round(py + Math.sin(t * 1.3) * ry * rFrac);
+        ctx.fillStyle = i % 2 === 0 ? '#bae6fd' : '#fde047';
+        ctx.fillRect(mx, my, 2, 2);
+      }
+      ctx.restore();
+
+      // Spire apex cosmic shimmer
+      const spireX = bx + Math.round(bw * 0.50);
+      const spireY = by + Math.round(bh * 0.08);
+      const sGlow = ctx.createRadialGradient(spireX, spireY, 1, spireX, spireY, 16 + pulse * 2);
+      sGlow.addColorStop(0, 'rgba(125, 211, 252, 0.45)');
+      sGlow.addColorStop(0.6, 'rgba(167, 139, 250, 0.2)');
+      sGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = sGlow;
+      ctx.beginPath();
+      ctx.arc(spireX, spireY, 16 + pulse * 2, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     ctx.restore();
@@ -2032,7 +2203,7 @@ export class WorldRenderer {
         { x: 1160, y: 685 }, { x: 1240, y: 685 },     // Guild hall
         { x: 1165, y: 1510 }, { x: 1235, y: 1510 },   // Home
         { x: 720, y: 1520 }, { x: 790, y: 1520 },     // Library
-        { x: 1170, y: 1840 }, { x: 1230, y: 1840 }    // Post office
+        { x: 1170, y: 1880 }, { x: 1230, y: 1880 }    // Post office
       ];
       windows.forEach(win => punchHole(win.x, win.y, TUNING.ATMOSPHERE.LIGHT_RADII.WINDOW, glowAlpha * 0.85));
 
